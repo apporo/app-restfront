@@ -9,11 +9,22 @@
     "url": "https://github.com/apporo"
   },
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "directories": {
+    "lib": "lib/"
   },
-  "engines": {
-    "node": "0.10 || 0.11 || 0.12 || 4"
+  "files": [
+    "bin/",
+    "config/",
+    "data/",
+    "lib/"
+  ],
+  "scripts": {
+    "build": "babel ./src -d ./lib",
+    "clean": "rm -rf ./lib",
+    "prepublish": "NODE_ENV=production npm run build",
+    "pretest": "NODE_ENV=test npm run build",
+    "test": "cucumber-js ./test/**/*.feature",
+    "verify": "npm run prepublish && cucumber-js ./test/**/*.feature"
   },
   "keywords": [
     "devebot",
@@ -21,12 +32,18 @@
   ],
   "peerDependencies": {
     "app-tracelog": "^0.2.1",
-    "devebot": "^0.2.4"
+    "devebot": "^0.2.5"
   },
   "dependencies": {
     "app-tracelog": "^0.2.1",
-    "devebot": "^0.2.4",
+    "devebot": "^0.2.5",
     "opflow": "^0.1.7",
     "path-to-regexp": "^2.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-minify-mangle-names": "^0.3.0",
+    "babel-preset-env": "^1.6.1",
+    "cucumber": "^4.0.0"
   }
 }
