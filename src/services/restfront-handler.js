@@ -12,7 +12,7 @@ var Service = function(params) {
   var self = this;
 
   var LX = params.loggingFactory.getLogger();
-  var TR = params.loggingFactory.getTracer();
+  var LT = params.loggingFactory.getTracer();
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
     tags: [ 'constructor-begin' ],
@@ -30,7 +30,7 @@ var Service = function(params) {
     lodash.forEach(mappings, function(mapping) {
       router.all(mapping.path, function(req, res, next) {
         var requestId = params.tracelogService.getRequestId(req);
-        var reqTR = TR.branch({ key: 'requestId', value: requestId });
+        var reqTR = LT.branch({ key: 'requestId', value: requestId });
         LX.isEnabledFor('info') && LX.log('info', reqTR.add({
           message: 'received API request',
           mapAuthen: mapping.authenticate,
