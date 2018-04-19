@@ -2,8 +2,9 @@
 
 var Devebot = require('devebot');
 var Promise = Devebot.require('bluebird');
+var chores = Devebot.require('chores');
 var lodash = Devebot.require('lodash');
-var debugx = Devebot.require('debug')('appRestfront:handler');
+var debugx = Devebot.require('pinbug')('app-restfront:handler');
 var fs = require('fs');
 var path = require('path');
 
@@ -13,9 +14,11 @@ var Service = function(params) {
 
   var LX = params.loggingFactory.getLogger();
   var LT = params.loggingFactory.getTracer();
+  var packageName = params.packageName || 'app-restfront';
+  var blockRef = chores.getBlockRef(__filename, packageName);
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ 'constructor-begin' ],
+    tags: [ blockRef, 'constructor-begin' ],
     text: ' + constructor begin ...'
   }));
 
@@ -101,7 +104,7 @@ var Service = function(params) {
   };
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ 'constructor-end' ],
+    tags: [ blockRef, 'constructor-end' ],
     text: ' - constructor end!'
   }));
 };
