@@ -37,7 +37,6 @@
   "dependencies": {
     "app-tracelog": "^0.2.2",
     "devebot": "^0.2.6",
-    "opflow": "^0.1.7",
     "path-to-regexp": "^2.1.0"
   },
   "devDependencies": {

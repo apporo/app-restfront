@@ -4,9 +4,6 @@ var Devebot = require('devebot');
 var Promise = Devebot.require('bluebird');
 var chores = Devebot.require('chores');
 var lodash = Devebot.require('lodash');
-var debugx = Devebot.require('pinbug')('app-restfront:handler');
-var fs = require('fs');
-var path = require('path');
 
 var Service = function(params) {
   params = params || {};
@@ -25,81 +22,90 @@ var Service = function(params) {
   var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   var contextPath = pluginCfg.contextPath || '/restfront';
   var mappings = require(pluginCfg.mappingStore);
-  var rpcHandler = params.restfrontTrigger.rpcHandler;
+  var sandboxRegistry = params['devebot/sandboxRegistry'];
+  var tracelogService = params['tracelogService'];
+
+  var lookupMethod = function(serviceName, methodName) {
+    var ref = {};
+    var commander = sandboxRegistry.lookupService("app-opmaster/commander");
+    if (commander) {
+      ref.isRemote = true;
+      ref.service = commander.lookupService(serviceName);
+      if (ref.service) {
+        ref.method = ref.service[methodName];
+      }
+    }
+    if (!ref.method) {
+      ref.isRemote = false;
+      ref.service = sandboxRegistry.lookupService(serviceName);
+      if (ref.service) {
+        ref.method = ref.service[methodName];
+      }
+    }
+    return ref;
+  }
 
   self.buildRestRouter = function(express) {
     var router = express.Router();
-
     lodash.forEach(mappings, function(mapping) {
       router.all(mapping.path, function(req, res, next) {
-        var requestId = params.tracelogService.getRequestId(req);
+        var requestId = tracelogService.getRequestId(req);
         var reqTR = LT.branch({ key: 'requestId', value: requestId });
         LX.isEnabledFor('info') && LX.log('info', reqTR.add({
-          message: 'received API request',
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
           mapMethod: mapping.method,
           url: req.url,
           method: req.method
-        }).toMessage());
-        debugx.enabled && debugx(' - received request: url: %s, method: %s, body: %s',
-          req.url, req.method, JSON.stringify(req.body));
+        }).toMessage({
+          text: 'received API request [${method}]${url}'
+        }));
         if (req.method !== mapping.method) return next();
-        var flow = Promise.resolve(true);
-        flow.then(function(continued) {
-          if (!continued) return false;
-          var rpcPayload = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
-          debugx.enabled && debugx(' - RPC payload: %s', JSON.stringify(rpcPayload));
-          return rpcHandler[mapping.rpcName].request(mapping.routineId, rpcPayload, {
-            timeout: pluginCfg.opflowTimeout,
-            requestId: requestId
-          }).then(function(task) {
-            return task.extractResult();
-          }).then(function(result) {
-            LX.isEnabledFor('info') && LX.log('info', reqTR.add({
-              message: 'RPC result',
-              resultStatus: result.status
-            }).toMessage({reset: true}));
-            switch(result.status) {
-              case 'timeout':
-                res.status(408).json({
-                  code: '5000',
-                  message: 'Service request has been timeout'
-                });
-                return true;
-              case 'failed':
-                res.status(412).json({
-                  code: '4120',
-                  message: 'Service request has been failed'
-                });
-                return true;
-              case 'completed':
-                res.json(result.value);
-                return true;
-            }
-            LX.isEnabledFor('error') && LX.log('error', reqTR.add({
-              message: 'RPC status not found'
-            }).toMessage());
-            res.status(404).json({
-              code: '5001',
-              message: 'Service request returns unknown status'
+
+        var rpcData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
+
+        var ref = lookupMethod(mapping.serviceName, mapping.methodName);
+        var refMethod = ref && ref.method;
+        if (lodash.isFunction(refMethod)) {
+          var promize;
+          if (ref.isRemote) {
+            promize = refMethod(rpcData, {
+              requestId: requestId,
+              timeout: pluginCfg.opflowTimeout,
+              opflowSeal: "on"
             });
-            return false;
+          } else {
+            promize = Promise.resolve().then(function() {
+              return refMethod(rpcData, {
+                requestId: requestId
+              });
+            });
+          }
+          return promize.then(function(result) {
+            LX.isEnabledFor('trace') && LX.log('trace', reqTR.add({
+              resultStatus: result.status
+            }).toMessage({
+              text: 'RPC result'
+            }));
+            res.json(result);
+            return result;
+          }).catch(function(failed) {
+            LX.isEnabledFor('error') && LX.log('error', reqTR.add({
+              errorCode: failed.code || '500',
+              errorMessage: failed.text || 'Service request returns unknown status'
+            }).toMessage({
+              text: 'Request is failed'
+            }));
+            res.status(400).json({
+              code: failed.code || '500',
+              message: failed.text || 'Service request returns unknown status'
+            });
           });
-        }).catch(function(error) {
-          LX.isEnabledFor('error') && LX.log('error', reqTR.add({
-            message: 'Request is failed',
-            errorCode: error.code || '5001',
-            errorMessage: error.message || 'Service request returns unknown status'
-          }).toMessage());
-          res.status(400).json({
-            code: error.code || '5001',
-            message: error.message || 'Service request returns unknown status'
-          });
-        });
+        } else {
+          next();
+        }
       });
     });
-
     return router;
   };
 
@@ -109,6 +115,6 @@ var Service = function(params) {
   }));
 };
 
-Service.referenceList = [ "restfrontTrigger", "tracelogService" ];
+Service.referenceList = ["devebot/sandboxRegistry", "tracelogService"];
 
 module.exports = Service;
