@@ -3,7 +3,6 @@
 var Devebot = require('devebot');
 var chores = Devebot.require('chores');
 var lodash = Devebot.require('lodash');
-var debugx = Devebot.require('pinbug')('app-restfront:service');
 var path = require('path');
 
 var Service = function(params) {
@@ -20,11 +19,10 @@ var Service = function(params) {
     text: ' + constructor begin ...'
   }));
 
-  debugx.enabled && debugx(' - attach service into app-webweaver');
-
   var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   var contextPath = pluginCfg.contextPath || '/restfront';
-  var express = params.webweaverService.express;
+  var webweaverService = params['webweaverService'];
+  var express = webweaverService.express;
 
   self.getApiDocLayer = function() {
     return {
@@ -51,14 +49,14 @@ var Service = function(params) {
   }
 
   if (pluginCfg.autowired !== false) {
-    params.webweaverService.push([
+    webweaverService.push([
       self.getApiDocLayer(),
       self.getAssetsLayer(),
-      params.webweaverService.getSessionLayer([
-        params.webweaverService.getJsonBodyParserLayer(),
+      webweaverService.getSessionLayer([
+        webweaverService.getJsonBodyParserLayer(),
         self.getApiV1Layer()
       ], contextPath),
-      params.webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
+      webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
     ], pluginCfg.priority);
   }
 
