@@ -21,6 +21,7 @@ var Service = function(params) {
 
   var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   var contextPath = pluginCfg.contextPath || '/restfront';
+  var restfrontHandler = params['handler'];
   var webweaverService = params['webweaverService'];
   var express = webweaverService.express;
 
@@ -44,7 +45,7 @@ var Service = function(params) {
     return {
       name: 'app-restfront-handler-apiv1',
       path: contextPath + '/api/v1',
-      middleware: params.restfrontHandler.buildRestRouter(express)
+      middleware: restfrontHandler.buildRestRouter(express)
     }
   }
 
@@ -66,6 +67,6 @@ var Service = function(params) {
   }));
 };
 
-Service.referenceList = [ 'restfrontHandler', 'webweaverService' ];
+Service.referenceList = [ 'handler', 'webweaverService' ];
 
 module.exports = Service;
