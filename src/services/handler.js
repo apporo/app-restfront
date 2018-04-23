@@ -51,7 +51,7 @@ var Service = function(params) {
       router.all(mapping.path, function(req, res, next) {
         var requestId = tracelogService.getRequestId(req);
         var reqTR = LT.branch({ key: 'requestId', value: requestId });
-        LX.isEnabledFor('info') && LX.log('info', reqTR.add({
+        LX.has('info') && LX.log('info', reqTR.add({
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
           mapMethod: mapping.method,
@@ -82,15 +82,20 @@ var Service = function(params) {
             });
           }
           return promize.then(function(result) {
-            LX.isEnabledFor('trace') && LX.log('trace', reqTR.add({
-              resultStatus: result.status
+            var output = result;
+            if (lodash.isFunction(mapping.transformResponse)) {
+              output = mapping.transformResponse(result, req);
+            }
+            LX.has('trace') && LX.log('trace', reqTR.add({
+              result: result,
+              output: output
             }).toMessage({
               text: 'RPC result'
             }));
-            res.json(result);
+            res.json(output);
             return result;
           }).catch(function(failed) {
-            LX.isEnabledFor('error') && LX.log('error', reqTR.add({
+            LX.has('error') && LX.log('error', reqTR.add({
               errorCode: failed.code || '500',
               errorMessage: failed.text || 'Service request returns unknown status'
             }).toMessage({

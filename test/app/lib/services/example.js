@@ -11,7 +11,7 @@ var Service = function(params) {
 
   var LX = params.loggingFactory.getLogger();
   var LT = params.loggingFactory.getTracer();
-  var packageName = params.packageName || 'app-restfront';
+  var packageName = params.packageName || 'application';
   var blockRef = chores.getBlockRef(__filename, packageName);
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
