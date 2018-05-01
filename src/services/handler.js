@@ -1,33 +1,40 @@
-  'use strict';
+'use strict';
 
-var Devebot = require('devebot');
-var Promise = Devebot.require('bluebird');
-var chores = Devebot.require('chores');
-var lodash = Devebot.require('lodash');
+const Devebot = require('devebot');
+const Promise = Devebot.require('bluebird');
+const chores = Devebot.require('chores');
+const lodash = Devebot.require('lodash');
 
-var Service = function(params) {
+function Handler(params) {
   params = params || {};
-  var self = this;
+  let self = this;
 
-  var LX = params.loggingFactory.getLogger();
-  var LT = params.loggingFactory.getTracer();
-  var packageName = params.packageName || 'app-restfront';
-  var blockRef = chores.getBlockRef(__filename, packageName);
+  let LX = params.loggingFactory.getLogger();
+  let LT = params.loggingFactory.getTracer();
+  let packageName = params.packageName || 'app-restfront';
+  let blockRef = chores.getBlockRef(__filename, packageName);
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
     tags: [ blockRef, 'constructor-begin' ],
     text: ' + constructor begin ...'
   }));
 
-  var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  var contextPath = pluginCfg.contextPath || '/restfront';
-  var mappings = require(pluginCfg.mappingStore);
-  var sandboxRegistry = params['devebot/sandboxRegistry'];
-  var tracelogService = params['tracelogService'];
+  let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
+  let contextPath = pluginCfg.contextPath || '/restfront';
+  let mappings = require(pluginCfg.mappingStore);
+  let sandboxRegistry = params['devebot/sandboxRegistry'];
+  let tracelogService = params['app-tracelog/tracelogService'];
+  let anchorIdName = pluginCfg.anchorIdName || 'anchorId'; 
 
-  var lookupMethod = function(serviceName, methodName) {
-    var ref = {};
-    var commander = sandboxRegistry.lookupService("app-opmaster/commander");
+  let getAnchorId = function(req) {
+    req[anchorIdName] = req[anchorIdName] ||
+        req.get(pluginCfg.anchorIdHeader) || req.query[anchorIdName];
+    return req[anchorIdName];
+  }
+
+  let lookupMethod = function(serviceName, methodName) {
+    let ref = {};
+    let commander = sandboxRegistry.lookupService("app-opmaster/commander");
     if (commander) {
       ref.isRemote = true;
       ref.service = commander.lookupService(serviceName);
@@ -46,11 +53,11 @@ var Service = function(params) {
   }
 
   self.buildRestRouter = function(express) {
-    var router = express.Router();
+    let router = express.Router();
     lodash.forEach(mappings, function(mapping) {
       router.all(mapping.path, function(req, res, next) {
-        var requestId = tracelogService.getRequestId(req);
-        var reqTR = LT.branch({ key: 'requestId', value: requestId });
+        let requestId = tracelogService.getRequestId(req);
+        let reqTR = LT.branch({ key: 'requestId', value: requestId });
         LX.has('info') && LX.log('info', reqTR.add({
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
@@ -62,12 +69,12 @@ var Service = function(params) {
         }));
         if (req.method !== mapping.method) return next();
 
-        var rpcData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
+        let rpcData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
 
-        var ref = lookupMethod(mapping.serviceName, mapping.methodName);
-        var refMethod = ref && ref.method;
+        let ref = lookupMethod(mapping.serviceName, mapping.methodName);
+        let refMethod = ref && ref.method;
         if (lodash.isFunction(refMethod)) {
-          var promize;
+          let promize;
           if (ref.isRemote) {
             promize = refMethod(rpcData, {
               requestId: requestId,
@@ -82,7 +89,7 @@ var Service = function(params) {
             });
           }
           return promize.then(function(result) {
-            var output = result;
+            let output = result;
             if (lodash.isFunction(mapping.transformResponse)) {
               output = mapping.transformResponse(result, req);
             }
@@ -120,6 +127,9 @@ var Service = function(params) {
   }));
 };
 
-Service.referenceList = ["devebot/sandboxRegistry", "tracelogService"];
+Handler.referenceList = [
+  "devebot/sandboxRegistry",
+  "app-tracelog/tracelogService"
+];
 
-module.exports = Service;
+module.exports = Handler;

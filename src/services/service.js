@@ -1,29 +1,29 @@
 'use strict';
 
-var Devebot = require('devebot');
-var chores = Devebot.require('chores');
-var lodash = Devebot.require('lodash');
-var path = require('path');
+const Devebot = require('devebot');
+const chores = Devebot.require('chores');
+const lodash = Devebot.require('lodash');
+const path = require('path');
 
-var Service = function(params) {
+function Service(params) {
   params = params || {};
-  var self = this;
+  let self = this;
 
-  var LX = params.loggingFactory.getLogger();
-  var LT = params.loggingFactory.getTracer();
-  var packageName = params.packageName || 'app-restfront';
-  var blockRef = chores.getBlockRef(__filename, packageName);
+  let LX = params.loggingFactory.getLogger();
+  let LT = params.loggingFactory.getTracer();
+  let packageName = params.packageName || 'app-restfront';
+  let blockRef = chores.getBlockRef(__filename, packageName);
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
     tags: [ blockRef, 'constructor-begin' ],
     text: ' + constructor begin ...'
   }));
 
-  var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  var contextPath = pluginCfg.contextPath || '/restfront';
-  var restfrontHandler = params['handler'];
-  var webweaverService = params['webweaverService'];
-  var express = webweaverService.express;
+  let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
+  let contextPath = pluginCfg.contextPath || '/restfront';
+  let restfrontHandler = params['handler'];
+  let webweaverService = params['app-webweaver/webweaverService'];
+  let express = webweaverService.express;
 
   self.getApiDocLayer = function() {
     return {
@@ -67,6 +67,9 @@ var Service = function(params) {
   }));
 };
 
-Service.referenceList = [ 'handler', 'webweaverService' ];
+Service.referenceList = [
+  'handler',
+  'app-webweaver/webweaverService'
+];
 
 module.exports = Service;

@@ -4,6 +4,7 @@ var Devebot = require('devebot');
 var Promise = Devebot.require('bluebird');
 var chores = Devebot.require('chores');
 var lodash = Devebot.require('lodash');
+var Fibonacci = require('../utils/fibonacci');
 
 var Service = function(params) {
   params = params || {};
@@ -30,7 +31,25 @@ var Service = function(params) {
       tags: [ blockRef, 'fibonacci' ],
       text: ' - fibonacci[${requestId}] is invoked with parameters: ${data}'
     }));
-    return data;
+    if (!data.number || data.number < 0 || data.number > 50) {
+      return Promise.reject({
+        input: data,
+        message: 'invalid input number'
+      });
+    }
+    var fibonacci = new Fibonacci(data);
+    var result = fibonacci.finish();
+    result.actionId = data.actionId;
+    LX.has('debug') && LX.log('debug', reqTr.add({
+      result: result
+    }).toMessage({
+      tags: [ blockRef, 'fibonacci' ],
+      text: ' - fibonacci[${requestId}] result: ${result}'
+    }));
+    if (data.delay && data.delay > 0) {
+      return Promise.resolve(result).delay(data.delay);
+    }
+    return result;
   }
 
   LX.has('silly') && LX.log('silly', LT.toMessage({
