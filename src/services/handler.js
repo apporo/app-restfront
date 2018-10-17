@@ -65,7 +65,7 @@ function Handler(params) {
           url: req.url,
           method: req.method
         }).toMessage({
-          text: 'received API request [${method}]${url}'
+          text: 'Request[${requestId}] from [${method}]${url}'
         }));
         if (req.method !== mapping.method) return next();
 
@@ -97,20 +97,23 @@ function Handler(params) {
               result: result,
               output: output
             }).toMessage({
-              text: 'RPC result'
+              text: 'Request[${requestId}] is completed'
             }));
             res.json(output);
             return result;
           }).catch(function(failed) {
-            LX.has('error') && LX.log('error', reqTR.add({
-              errorCode: failed.code || '500',
-              errorMessage: failed.text || 'Service request returns unknown status'
-            }).toMessage({
-              text: 'Request is failed'
+            var output = failed;
+            if (lodash.isFunction(mapping.transformError)) {
+              output = mapping.transformError(failed, req);
+            }
+            output.code = output.code || 500,
+            output.text = output.text || 'Service request returns unknown status';
+            LX.has('error') && LX.log('error', reqTR.add(output).toMessage({
+              text: 'Request[${requestId}] has failed'
             }));
-            res.status(400).json({
-              code: failed.code || '500',
-              message: failed.text || 'Service request returns unknown status'
+            res.status(output.code).json({
+              code: output.code,
+              message: output.text
             });
           });
         } else {

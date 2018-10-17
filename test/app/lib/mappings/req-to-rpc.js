@@ -8,7 +8,13 @@ var mappings = [
       return { number: req.params.number }
     },
     serviceName: 'application/example',
-    methodName: 'fibonacci'
+    methodName: 'fibonacci',
+    transformError: function(err, req) {
+      return err;
+    },
+    transformResponse: function(result, req) {
+      return result;
+    }
   }
 ]
 
