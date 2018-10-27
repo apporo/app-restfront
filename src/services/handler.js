@@ -9,12 +9,12 @@ function Handler(params) {
   params = params || {};
   let self = this;
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
+  let L = params.loggingFactory.getLogger();
+  let T = params.loggingFactory.getTracer();
   let packageName = params.packageName || 'app-restfront';
   let blockRef = chores.getBlockRef(__filename, packageName);
 
-  LX.has('silly') && LX.log('silly', LT.toMessage({
+  L.has('silly') && L.log('silly', T.toMessage({
     tags: [ blockRef, 'constructor-begin' ],
     text: ' + constructor begin ...'
   }));
@@ -57,8 +57,8 @@ function Handler(params) {
     lodash.forEach(mappings, function(mapping) {
       router.all(mapping.path, function(req, res, next) {
         let requestId = tracelogService.getRequestId(req);
-        let reqTR = LT.branch({ key: 'requestId', value: requestId });
-        LX.has('info') && LX.log('info', reqTR.add({
+        let reqTR = T.branch({ key: 'requestId', value: requestId });
+        L.has('info') && L.log('info', reqTR.add({
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
           mapMethod: mapping.method,
@@ -89,17 +89,25 @@ function Handler(params) {
             });
           }
           return promize.then(function(result) {
-            let output = result;
+            let output = { body: result };
             if (lodash.isFunction(mapping.transformResponse)) {
               output = mapping.transformResponse(result, req);
+              if (lodash.isEmpty(output) || !("body" in output)) {
+                output = { body: output };
+              }
             }
-            LX.has('trace') && LX.log('trace', reqTR.add({
+            L.has('trace') && L.log('trace', reqTR.add({
               result: result,
               output: output
             }).toMessage({
               text: 'Request[${requestId}] is completed'
             }));
-            res.json(output);
+            if (lodash.isObject(output.headers)) {
+              lodash.forOwn(output.headers, function(value, key) {
+                res.set(key, value);
+              });
+            }
+            res.json(output.body);
             return result;
           }).catch(function(failed) {
             var output = failed;
@@ -108,7 +116,7 @@ function Handler(params) {
             }
             output.code = output.code || 500,
             output.text = output.text || 'Service request returns unknown status';
-            LX.has('error') && LX.log('error', reqTR.add(output).toMessage({
+            L.has('error') && L.log('error', reqTR.add(output).toMessage({
               text: 'Request[${requestId}] has failed'
             }));
             res.status(output.code).json({
@@ -124,7 +132,7 @@ function Handler(params) {
     return router;
   };
 
-  LX.has('silly') && LX.log('silly', LT.toMessage({
+  L.has('silly') && L.log('silly', T.toMessage({
     tags: [ blockRef, 'constructor-end' ],
     text: ' - constructor end!'
   }));

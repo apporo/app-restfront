@@ -9,12 +9,12 @@ function Service(params) {
   params = params || {};
   let self = this;
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
+  let L = params.loggingFactory.getLogger();
+  let T = params.loggingFactory.getTracer();
   let packageName = params.packageName || 'app-restfront';
   let blockRef = chores.getBlockRef(__filename, packageName);
 
-  LX.has('silly') && LX.log('silly', LT.toMessage({
+  L.has('silly') && L.log('silly', T.toMessage({
     tags: [ blockRef, 'constructor-begin' ],
     text: ' + constructor begin ...'
   }));
@@ -61,7 +61,7 @@ function Service(params) {
     ], pluginCfg.priority);
   }
 
-  LX.has('silly') && LX.log('silly', LT.toMessage({
+  L.has('silly') && L.log('silly', T.toMessage({
     tags: [ blockRef, 'constructor-end' ],
     text: ' - constructor end!'
   }));
