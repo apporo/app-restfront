@@ -15,11 +15,6 @@ var Service = function(params) {
   var packageName = params.packageName || 'application';
   var blockRef = chores.getBlockRef(__filename, packageName);
 
-  L.has('silly') && L.log('silly', T.toMessage({
-    tags: [ blockRef, 'constructor-begin' ],
-    text: ' + constructor begin ...'
-  }));
-
   var pluginCfg = lodash.get(params, ['sandboxConfig'], {});
 
   this.fibonacci = function(data, opts) {
@@ -51,11 +46,6 @@ var Service = function(params) {
     }
     return result;
   }
-
-  L.has('silly') && L.log('silly', T.toMessage({
-    tags: [ blockRef, 'constructor-end' ],
-    text: ' - constructor end!'
-  }));
 };
 
 module.exports = Service;
