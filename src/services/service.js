@@ -1,7 +1,6 @@
 'use strict';
 
 const Devebot = require('devebot');
-const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const path = require('path');
 
@@ -9,15 +8,8 @@ function Service(params) {
   params = params || {};
   let self = this;
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
-  let packageName = params.packageName || 'app-restfront';
-  let blockRef = chores.getBlockRef(__filename, packageName);
-
-  LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ blockRef, 'constructor-begin' ],
-    text: ' + constructor begin ...'
-  }));
+  let L = params.loggingFactory.getLogger();
+  let T = params.loggingFactory.getTracer();
 
   let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   let contextPath = pluginCfg.contextPath || '/restfront';
@@ -60,11 +52,6 @@ function Service(params) {
       webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
     ], pluginCfg.priority);
   }
-
-  LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ blockRef, 'constructor-end' ],
-    text: ' - constructor end!'
-  }));
 };
 
 Service.referenceList = [

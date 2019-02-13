@@ -2,29 +2,20 @@
 
 const Devebot = require('devebot');
 const Promise = Devebot.require('bluebird');
-const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 
 function Handler(params) {
   params = params || {};
-  let self = this;
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
-  let packageName = params.packageName || 'app-restfront';
-  let blockRef = chores.getBlockRef(__filename, packageName);
-
-  LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ blockRef, 'constructor-begin' ],
-    text: ' + constructor begin ...'
-  }));
+  let L = params.loggingFactory.getLogger();
+  let T = params.loggingFactory.getTracer();
 
   let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   let contextPath = pluginCfg.contextPath || '/restfront';
+  let anchorIdName = pluginCfg.anchorIdName || 'anchorId';
   let mappings = require(pluginCfg.mappingStore);
   let sandboxRegistry = params['devebot/sandboxRegistry'];
   let tracelogService = params['app-tracelog/tracelogService'];
-  let anchorIdName = pluginCfg.anchorIdName || 'anchorId'; 
 
   let getAnchorId = function(req) {
     req[anchorIdName] = req[anchorIdName] ||
@@ -32,7 +23,7 @@ function Handler(params) {
     return req[anchorIdName];
   }
 
-  let lookupMethod = function(serviceName, methodName) {
+  this.lookupMethod = function(serviceName, methodName) {
     let ref = {};
     let commander = sandboxRegistry.lookupService("app-opmaster/commander");
     if (commander) {
@@ -52,26 +43,28 @@ function Handler(params) {
     return ref;
   }
 
-  self.buildRestRouter = function(express) {
+  this.buildRestRouter = function(express) {
+    let self = this;
     let router = express.Router();
     lodash.forEach(mappings, function(mapping) {
       router.all(mapping.path, function(req, res, next) {
         let requestId = tracelogService.getRequestId(req);
-        let reqTR = LT.branch({ key: 'requestId', value: requestId });
-        LX.has('info') && LX.log('info', reqTR.add({
+        let reqTR = T.branch({ key: 'requestId', value: requestId });
+        L.has('info') && L.log('info', reqTR.add({
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
           mapMethod: mapping.method,
           url: req.url,
           method: req.method
         }).toMessage({
-          text: 'received API request [${method}]${url}'
-        }));
+          text: 'Request[${requestId}] from [${method}]${url}'
+        }, 'direct'));
         if (req.method !== mapping.method) return next();
 
+        let reqOpts = { requestId: requestId };
         let rpcData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
 
-        let ref = lookupMethod(mapping.serviceName, mapping.methodName);
+        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName, reqOpts);
         let refMethod = ref && ref.method;
         if (lodash.isFunction(refMethod)) {
           let promize;
@@ -89,28 +82,39 @@ function Handler(params) {
             });
           }
           return promize.then(function(result) {
-            let output = result;
+            let output = { body: result };
             if (lodash.isFunction(mapping.transformResponse)) {
               output = mapping.transformResponse(result, req);
+              if (lodash.isEmpty(output) || !("body" in output)) {
+                output = { body: output };
+              }
             }
-            LX.has('trace') && LX.log('trace', reqTR.add({
+            L.has('trace') && L.log('trace', reqTR.add({
               result: result,
               output: output
             }).toMessage({
-              text: 'RPC result'
+              text: 'Request[${requestId}] is completed'
             }));
-            res.json(output);
+            if (lodash.isObject(output.headers)) {
+              lodash.forOwn(output.headers, function(value, key) {
+                res.set(key, value);
+              });
+            }
+            res.json(output.body);
             return result;
           }).catch(function(failed) {
-            LX.has('error') && LX.log('error', reqTR.add({
-              errorCode: failed.code || '500',
-              errorMessage: failed.text || 'Service request returns unknown status'
-            }).toMessage({
-              text: 'Request is failed'
+            var output = failed;
+            if (lodash.isFunction(mapping.transformError)) {
+              output = mapping.transformError(failed, req);
+            }
+            output.code = output.code || 500,
+            output.text = output.text || 'Service request returns unknown status';
+            L.has('error') && L.log('error', reqTR.add(output).toMessage({
+              text: 'Request[${requestId}] has failed'
             }));
-            res.status(400).json({
-              code: failed.code || '500',
-              message: failed.text || 'Service request returns unknown status'
+            res.status(output.code).json({
+              code: output.code,
+              message: output.text
             });
           });
         } else {
@@ -120,11 +124,6 @@ function Handler(params) {
     });
     return router;
   };
-
-  LX.has('silly') && LX.log('silly', LT.toMessage({
-    tags: [ blockRef, 'constructor-end' ],
-    text: ' - constructor end!'
-  }));
 };
 
 Handler.referenceList = [
