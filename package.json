@@ -37,7 +37,8 @@
   "dependencies": {
     "app-tracelog": "^0.2.2",
     "devebot": "^0.2.6",
-    "path-to-regexp": "^2.1.0"
+    "path-to-regexp": "^2.1.0",
+    "schema-validator": "^3.3.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

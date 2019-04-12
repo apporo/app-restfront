@@ -33,6 +33,14 @@ function Service(params) {
     }
   }
 
+  self.getValidator = function() {
+    return {
+      name: 'app-restfront-handler-validator',
+      path: contextPath + '/api/v1',
+      middleware: restfrontHandler.validator(express)
+    }
+  }
+
   self.getApiV1Layer = function() {
     return {
       name: 'app-restfront-handler-apiv1',
@@ -47,6 +55,7 @@ function Service(params) {
       self.getAssetsLayer(),
       webweaverService.getSessionLayer([
         webweaverService.getJsonBodyParserLayer(),
+        self.getValidator(),
         self.getApiV1Layer()
       ], contextPath),
       webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
