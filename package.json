@@ -1,6 +1,6 @@
 {
   "name": "app-restfront",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Devebot application restfront layerware",
   "homepage": "https://github.com/apporo/app-restfront.git",
   "author": {
@@ -31,14 +31,14 @@
     "devebot-plugin"
   ],
   "peerDependencies": {
-    "app-tracelog": "^0.2.2",
-    "devebot": "^0.2.6"
+    "app-tracelog": "^0.3.0",
+    "devebot": "^0.3.0"
   },
   "dependencies": {
-    "app-tracelog": "^0.2.2",
-    "devebot": "^0.2.6",
-    "path-to-regexp": "^2.1.0",
-    "schema-validator": "^3.3.1"
+    "app-tracelog": "^0.3.0",
+    "devebot": "^0.3.0",
+    "path-to-regexp": "2.4.0",
+    "schema-validator": "3.3.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
