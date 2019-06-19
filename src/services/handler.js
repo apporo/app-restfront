@@ -5,9 +5,7 @@ const Promise = Devebot.require('bluebird');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 
-function Handler(params) {
-  params = params || {};
-
+function Handler(params = {}) {
   let L = params.loggingFactory.getLogger();
   let T = params.loggingFactory.getTracer();
 

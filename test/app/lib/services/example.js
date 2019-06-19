@@ -8,7 +8,6 @@ var Fibonacci = require('../utils/fibonacci');
 
 var Service = function(params) {
   params = params || {};
-  var self = this;
 
   var L = params.loggingFactory.getLogger();
   var T = params.loggingFactory.getTracer();

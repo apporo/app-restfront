@@ -4,10 +4,7 @@ const Devebot = require('devebot');
 const lodash = Devebot.require('lodash');
 const path = require('path');
 
-function Service(params) {
-  params = params || {};
-  let self = this;
-
+function Service(params = {}) {
   let L = params.loggingFactory.getLogger();
   let T = params.loggingFactory.getTracer();
 
@@ -17,7 +14,7 @@ function Service(params) {
   let webweaverService = params['app-webweaver/webweaverService'];
   let express = webweaverService.express;
 
-  self.getApiDocLayer = function() {
+  this.getApiDocLayer = function() {
     return {
       name: 'app-restfront-service-apidoc',
       path: contextPath + '/apidoc',
@@ -25,7 +22,7 @@ function Service(params) {
     }
   }
 
-  self.getAssetsLayer = function() {
+  this.getAssetsLayer = function() {
     return {
       name: 'app-restfront-service-assets',
       path: contextPath + '/assets',
@@ -33,7 +30,7 @@ function Service(params) {
     }
   }
 
-  self.getValidator = function() {
+  this.getValidator = function() {
     return {
       name: 'app-restfront-handler-validator',
       path: contextPath + '/api/v1',
@@ -41,7 +38,7 @@ function Service(params) {
     }
   }
 
-  self.getApiV1Layer = function() {
+  this.getApiV1Layer = function() {
     return {
       name: 'app-restfront-handler-apiv1',
       path: contextPath + '/api/v1',
@@ -51,12 +48,12 @@ function Service(params) {
 
   if (pluginCfg.autowired !== false) {
     webweaverService.push([
-      self.getApiDocLayer(),
-      self.getAssetsLayer(),
+      this.getApiDocLayer(),
+      this.getAssetsLayer(),
       webweaverService.getSessionLayer([
         webweaverService.getJsonBodyParserLayer(),
-        self.getValidator(),
-        self.getApiV1Layer()
+        this.getValidator(),
+        this.getApiV1Layer()
       ], contextPath),
       webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
     ], pluginCfg.priority);
