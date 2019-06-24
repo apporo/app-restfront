@@ -6,30 +6,26 @@ const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 
 function Handler(params = {}) {
-  let L = params.loggingFactory.getLogger();
-  let T = params.loggingFactory.getTracer();
-
-  let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  let contextPath = pluginCfg.contextPath || '/restfront';
-  let anchorIdName = pluginCfg.anchorIdName || 'anchorId';
+  const L = params.loggingFactory.getLogger();
+  const T = params.loggingFactory.getTracer();
+  const { sandboxRegistry, tracelogService } = params;
+  const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
+  let serviceBroker = pluginCfg.serviceBroker || 'app-opmaster/commander';
+  let serviceBrokerAvailable = true;
   let mappings = require(pluginCfg.mappingStore);
-  let sandboxRegistry = params['devebot/sandboxRegistry'];
-  let tracelogService = params['app-tracelog/tracelogService'];
-
-  let getAnchorId = function (req) {
-    req[anchorIdName] = req[anchorIdName] ||
-      req.get(pluginCfg.anchorIdHeader) || req.query[anchorIdName];
-    return req[anchorIdName];
-  }
 
   this.lookupMethod = function (serviceName, methodName) {
     let ref = {};
-    let commander = sandboxRegistry.lookupService("app-opmaster/commander");
-    if (commander) {
-      ref.isRemote = true;
-      ref.service = commander.lookupService(serviceName);
-      if (ref.service) {
-        ref.method = ref.service[methodName];
+    if (serviceBrokerAvailable) {
+      let commander = sandboxRegistry.lookupService(serviceBroker);
+      if (commander) {
+        ref.isRemote = true;
+        ref.service = commander.lookupService(serviceName);
+        if (ref.service) {
+          ref.method = ref.service[methodName];
+        }
+      } else {
+        serviceBrokerAvailable = false;
       }
     }
     if (!ref.method) {
@@ -43,7 +39,7 @@ function Handler(params = {}) {
   }
 
   this.validator = function (express) {
-    let router = express.Router();
+    const router = express.Router();
     lodash.forEach(mappings, function (mapping) {
       if (mapping.validatorSchema) {
         router.all(mapping.path, function (req, res, next) {
@@ -81,8 +77,8 @@ function Handler(params = {}) {
   }
 
   this.buildRestRouter = function (express) {
-    let self = this;
-    let router = express.Router();
+    const self = this;
+    const router = express.Router();
     lodash.forEach(mappings, function (mapping) {
       router.all(mapping.path, function (req, res, next) {
         let requestId = tracelogService.getRequestId(req);
@@ -163,9 +159,9 @@ function Handler(params = {}) {
   };
 };
 
-Handler.referenceList = [
-  "devebot/sandboxRegistry",
-  "app-tracelog/tracelogService"
-];
+Handler.referenceHash = {
+  "sandboxRegistry": "devebot/sandboxRegistry",
+  "tracelogService": "app-tracelog/tracelogService",
+};
 
 module.exports = Handler;

@@ -5,14 +5,12 @@ const lodash = Devebot.require('lodash');
 const path = require('path');
 
 function Service(params = {}) {
-  let L = params.loggingFactory.getLogger();
-  let T = params.loggingFactory.getTracer();
-
-  let pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  let contextPath = pluginCfg.contextPath || '/restfront';
-  let restfrontHandler = params['handler'];
-  let webweaverService = params['app-webweaver/webweaverService'];
-  let express = webweaverService.express;
+  const L = params.loggingFactory.getLogger();
+  const T = params.loggingFactory.getTracer();
+  const { restfrontHandler, webweaverService } = params;
+  const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
+  const contextPath = pluginCfg.contextPath || '/restfront';
+  const express = webweaverService.express;
 
   this.getApiDocLayer = function() {
     return {
@@ -60,9 +58,9 @@ function Service(params = {}) {
   }
 };
 
-Service.referenceList = [
-  'handler',
-  'app-webweaver/webweaverService'
-];
+Service.referenceHash = {
+  restfrontHandler: 'handler',
+  webweaverService: 'app-webweaver/webweaverService'
+};
 
 module.exports = Service;

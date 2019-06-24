@@ -17,7 +17,6 @@ module.exports = {
         handler: {
           methods: {
             lookupMethod: {
-              recursive: true,
               logging: {
                 onRequest: {
                   extractInfo: function(argumentsList) {
