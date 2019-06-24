@@ -10,6 +10,8 @@ function Service(params = {}) {
   const { restfrontHandler, webweaverService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const contextPath = pluginCfg.contextPath || '/restfront';
+  const apiPath = pluginCfg.apiPath || '/api';
+  const apiVersion = pluginCfg.apiVersion || '/v1';
   const express = webweaverService.express;
 
   this.getApiDocLayer = function() {
@@ -39,7 +41,7 @@ function Service(params = {}) {
   this.getApiV1Layer = function() {
     return {
       name: 'app-restfront-handler-apiv1',
-      path: contextPath + '/api/v1',
+      path: path.join(contextPath, apiPath, apiVersion),
       middleware: restfrontHandler.buildRestRouter(express)
     }
   }

@@ -21,5 +21,5 @@ DEVEBOT_TEXTURE=mock node test/app
 ```
 
 ```shell
-curl --request GET --url http://localhost:7979/restfront/api/v1/fibonacci/calc/47
+curl --request GET --url http://localhost:7979/restfront/rest/v2/fibonacci/calc/47
 ```
