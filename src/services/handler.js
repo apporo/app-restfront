@@ -104,7 +104,7 @@ function Handler(params = {}) {
           if (ref.isRemote) {
             promize = refMethod(reqData, {
               requestId: requestId,
-              timeout: pluginCfg.opflowTimeout,
+              timeout: pluginCfg.timeout,
               opflowSeal: "on"
             });
           } else {
@@ -122,10 +122,7 @@ function Handler(params = {}) {
                 output = { body: output };
               }
             }
-            L.has('trace') && L.log('trace', reqTR.add({
-              result: result,
-              output: output
-            }).toMessage({
+            L.has('trace') && L.log('trace', reqTR.add({ result, output }).toMessage({
               text: 'Request[${requestId}] is completed'
             }));
             if (lodash.isObject(output.headers)) {
