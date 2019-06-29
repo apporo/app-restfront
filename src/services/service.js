@@ -33,14 +33,14 @@ function Service(params = {}) {
   this.getValidator = function() {
     return {
       name: 'app-restfront-handler-validator',
-      path: contextPath + '/api/v1',
+      path: path.join(contextPath, apiPath, apiVersion),
       middleware: restfrontHandler.validator(express)
     }
   }
 
-  this.getApiV1Layer = function() {
+  this.getRestLayer = function() {
     return {
-      name: 'app-restfront-handler-apiv1',
+      name: 'app-restfront-handler-restapi',
       path: path.join(contextPath, apiPath, apiVersion),
       middleware: restfrontHandler.buildRestRouter(express)
     }
@@ -53,7 +53,7 @@ function Service(params = {}) {
       webweaverService.getSessionLayer([
         webweaverService.getJsonBodyParserLayer(),
         this.getValidator(),
-        this.getApiV1Layer()
+        this.getRestLayer()
       ], contextPath),
       webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
     ], pluginCfg.priority);

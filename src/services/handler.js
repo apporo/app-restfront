@@ -10,14 +10,14 @@ function Handler(params = {}) {
   const T = params.loggingFactory.getTracer();
   const { sandboxRegistry, tracelogService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  let serviceBroker = pluginCfg.serviceBroker || 'app-opmaster/commander';
-  let serviceBrokerAvailable = true;
+  let serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
+  let serviceResolverAvailable = true;
   let mappings = require(pluginCfg.mappingStore);
 
   this.lookupMethod = function (serviceName, methodName) {
     let ref = {};
-    if (serviceBrokerAvailable) {
-      let commander = sandboxRegistry.lookupService(serviceBroker);
+    if (serviceResolverAvailable) {
+      let commander = sandboxRegistry.lookupService(serviceResolver);
       if (commander) {
         ref.isRemote = true;
         ref.service = commander.lookupService(serviceName);
@@ -25,7 +25,7 @@ function Handler(params = {}) {
           ref.method = ref.service[methodName];
         }
       } else {
-        serviceBrokerAvailable = false;
+        serviceResolverAvailable = false;
       }
     }
     if (!ref.method) {

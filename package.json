@@ -44,6 +44,9 @@
     "babel-cli": "^6.26.0",
     "babel-plugin-minify-mangle-names": "^0.3.0",
     "babel-preset-env": "^1.6.1",
-    "cucumber": "^4.0.0"
+    "chai": "^4.1.2",
+    "mocha": "^4.1.0",
+    "rewire": "^4.0.1",
+    "sinon": "^7.3.2"
   }
 }
