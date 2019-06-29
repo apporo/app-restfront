@@ -10,21 +10,14 @@ function Service(params = {}) {
   const contextPath = pluginCfg.contextPath || '/restfront';
   const apiPath = pluginCfg.apiPath || '/api';
   const apiVersion = pluginCfg.apiVersion || '/v1';
+  const staticpages = pluginCfg.static;
   const express = webweaverService.express;
 
-  this.getApiDocLayer = function() {
+  this.getAssetsLayer = function(webpath, filepath, index) {
     return {
-      name: 'app-restfront-service-apidoc',
-      path: contextPath + '/apidoc',
-      middleware: express.static(path.join(__dirname, '../../apidoc'))
-    }
-  }
-
-  this.getAssetsLayer = function() {
-    return {
-      name: 'app-restfront-service-assets',
-      path: contextPath + '/assets',
-      middleware: express.static(path.join(__dirname, '../../public/assets'))
+      name: 'app-restfront-service-assets~' + index,
+      path: path.join(contextPath, webpath),
+      middleware: express.static(filepath)
     }
   }
 
@@ -45,16 +38,23 @@ function Service(params = {}) {
   }
 
   if (pluginCfg.autowired !== false) {
-    webweaverService.push([
-      this.getApiDocLayer(),
-      this.getAssetsLayer(),
-      webweaverService.getSessionLayer([
-        webweaverService.getJsonBodyParserLayer(),
-        this.getValidator(),
-        this.getRestLayer()
-      ], contextPath),
-      webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$'])
-    ], pluginCfg.priority);
+    const self = this;
+    const layerware = [];
+    lodash.keys(staticpages).forEach(function(webpath, index) {
+      if (lodash.isString(webpath)) {
+        const filepath = staticpages[webpath];
+        if (lodash.isString(filepath)) {
+          layerware.push(self.getAssetsLayer(webpath, filepath, index));
+        }
+      }
+    })
+    layerware.push(webweaverService.getSessionLayer([
+      webweaverService.getJsonBodyParserLayer(),
+      this.getValidator(),
+      this.getRestLayer()
+    ], contextPath));
+    layerware.push(webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$']));
+    webweaverService.push(layerware, pluginCfg.priority);
   }
 };
 
