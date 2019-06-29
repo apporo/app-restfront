@@ -95,21 +95,21 @@ function Handler(params = {}) {
         if (req.method !== mapping.method) return next();
 
         let reqOpts = { requestId: requestId };
-        let rpcData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
+        let reqData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
 
         let ref = self.lookupMethod(mapping.serviceName, mapping.methodName, reqOpts);
         let refMethod = ref && ref.method;
         if (lodash.isFunction(refMethod)) {
           let promize;
           if (ref.isRemote) {
-            promize = refMethod(rpcData, {
+            promize = refMethod(reqData, {
               requestId: requestId,
               timeout: pluginCfg.opflowTimeout,
               opflowSeal: "on"
             });
           } else {
             promize = Promise.resolve().then(function () {
-              return refMethod(rpcData, {
+              return refMethod(reqData, {
                 requestId: requestId
               });
             });

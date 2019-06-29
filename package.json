@@ -21,10 +21,10 @@
   "scripts": {
     "build": "babel ./src -d ./lib",
     "clean": "rm -rf ./lib",
-    "prepublish": "npm run clean && NODE_ENV=production npm run build",
-    "pretest": "npm run clean && NODE_ENV=test npm run build",
-    "test": "cucumber-js ./test/**/*.feature",
-    "verify": "npm run prepublish && cucumber-js ./test/**/*.feature"
+    "prepublish": "npm run clean && cross-env NODE_ENV=production npm run build",
+    "pretest": "npm run clean && cross-env NODE_ENV=test npm run build",
+    "test": "mocha ./test/{bdd,tdd}/*test.js",
+    "verify": "npm run prepublish && mocha ./test/{bdd,tdd}/*test.js"
   },
   "keywords": [
     "devebot",
@@ -45,6 +45,7 @@
     "babel-plugin-minify-mangle-names": "^0.3.0",
     "babel-preset-env": "^1.6.1",
     "chai": "^4.1.2",
+    "cross-env": "^5.2.0",
     "mocha": "^4.1.0",
     "rewire": "^4.0.1",
     "sinon": "^7.3.2"

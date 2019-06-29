@@ -5,8 +5,6 @@ const lodash = Devebot.require('lodash');
 const path = require('path');
 
 function Service(params = {}) {
-  const L = params.loggingFactory.getLogger();
-  const T = params.loggingFactory.getTracer();
   const { restfrontHandler, webweaverService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const contextPath = pluginCfg.contextPath || '/restfront';
