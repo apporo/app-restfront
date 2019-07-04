@@ -6,6 +6,9 @@ const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 
+const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
+    chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
+
 function Handler(params = {}) {
   const L = params.loggingFactory.getLogger();
   const T = params.loggingFactory.getTracer();
@@ -14,7 +17,14 @@ function Handler(params = {}) {
   let serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
   let serviceResolverAvailable = true;
 
-  let mappings = joinMappings(loadMappings(pluginCfg.mappingStore));
+  let mappingHash;
+  if (BUILTIN_MAPPING_LOADER) {
+    mappingHash = params.mappingLoader.loadMappings(pluginCfg.mappingStore);
+  } else {
+    mappingHash = loadMappings(pluginCfg.mappingStore);
+  }
+
+  const mappings = joinMappings(mappingHash);
 
   this.lookupMethod = function (serviceName, methodName) {
     let ref = {};
@@ -160,6 +170,14 @@ Handler.referenceHash = {
   "tracelogService": "app-tracelog/tracelogService",
 };
 
+if (BUILTIN_MAPPING_LOADER) {
+  Handler.referenceHash = {
+    "mappingLoader": "devebot/mappingLoader",
+    "sandboxRegistry": "devebot/sandboxRegistry",
+    "tracelogService": "app-tracelog/tracelogService",
+  };
+}
+
 module.exports = Handler;
 
 function loadMappings (mappingStore) {
@@ -177,8 +195,7 @@ function loadMappings (mappingStore) {
   return mappings;
 }
 
-function joinMappings (mappingMap) {
-  const mappings = [];
+function joinMappings (mappingMap, mappings = []) {
   lodash.forOwn(mappingMap, function(mappingList, name) {
     mappings.push.apply(mappings, mappingList);
   });
