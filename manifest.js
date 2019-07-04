@@ -17,7 +17,19 @@ module.exports = {
             "type": "string"
           },
           "mappingStore": {
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "patternProperties": {
+                  "^.+$": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
           },
           "static": {
             "type": "object",

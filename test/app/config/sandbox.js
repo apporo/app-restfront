@@ -11,7 +11,9 @@ module.exports = {
       contextPath: contextPath,
       apiPath: apiPath,
       apiVersion: apiVersion,
-      mappingStore: require('path').join(__dirname, '../lib/mappings/req-to-rpc'),
+      mappingStore: {
+        "example-mappings": require('path').join(__dirname, '../lib/mappings/req-to-rpc')
+      },
       static: {
         'apidoc': path.join(__dirname, '../public/apidoc'),
         'assets': path.join(__dirname, '../public/assets')

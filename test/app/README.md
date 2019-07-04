@@ -11,6 +11,7 @@ npm install
 Start the example server:
 
 ```shell
+export DEVEBOT_SANDBOX=old-mappings
 node test/app
 ```
 
