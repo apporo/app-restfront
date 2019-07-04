@@ -8,8 +8,9 @@ function Service(params = {}) {
   const { restfrontHandler, webweaverService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const contextPath = pluginCfg.contextPath || '/restfront';
-  const apiPath = pluginCfg.apiPath || '/api';
-  const apiVersion = pluginCfg.apiVersion || '/v1';
+  const apiPath = pluginCfg.apiPath || '';
+  const apiVersion = pluginCfg.apiVersion || '';
+  const apiFullPath = path.join(contextPath, apiPath, apiVersion);
   const staticpages = pluginCfg.static;
   const express = webweaverService.express;
 
@@ -24,7 +25,7 @@ function Service(params = {}) {
   this.getValidator = function() {
     return {
       name: 'app-restfront-handler-validator',
-      path: path.join(contextPath, apiPath, apiVersion),
+      path: apiFullPath,
       middleware: restfrontHandler.validator(express)
     }
   }
@@ -32,7 +33,7 @@ function Service(params = {}) {
   this.getRestLayer = function() {
     return {
       name: 'app-restfront-handler-restapi',
-      path: path.join(contextPath, apiPath, apiVersion),
+      path: apiFullPath,
       middleware: restfrontHandler.buildRestRouter(express)
     }
   }
@@ -52,7 +53,7 @@ function Service(params = {}) {
       webweaverService.getJsonBodyParserLayer(),
       this.getValidator(),
       this.getRestLayer()
-    ], contextPath));
+    ], apiFullPath));
     layerware.push(webweaverService.getDefaultRedirectLayer(['/$', contextPath + '$']));
     webweaverService.push(layerware, pluginCfg.priority);
   }

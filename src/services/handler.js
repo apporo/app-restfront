@@ -2,6 +2,7 @@
 
 const Devebot = require('devebot');
 const Promise = Devebot.require('bluebird');
+const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 
@@ -12,7 +13,8 @@ function Handler(params = {}) {
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   let serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
   let serviceResolverAvailable = true;
-  let mappings = require(pluginCfg.mappingStore);
+
+  let mappings = joinMappings(loadMappings(pluginCfg.mappingStore));
 
   this.lookupMethod = function (serviceName, methodName) {
     let ref = {};
@@ -81,8 +83,8 @@ function Handler(params = {}) {
     const router = express.Router();
     lodash.forEach(mappings, function (mapping) {
       router.all(mapping.path, function (req, res, next) {
-        let requestId = tracelogService.getRequestId(req);
-        let reqTR = T.branch({ key: 'requestId', value: requestId });
+        const requestId = tracelogService.getRequestId(req);
+        const reqTR = T.branch({ key: 'requestId', value: requestId });
         L.has('info') && L.log('info', reqTR.add({
           mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
@@ -94,7 +96,10 @@ function Handler(params = {}) {
         }, 'direct'));
         if (req.method !== mapping.method) return next();
 
-        let reqOpts = { requestId: requestId };
+        const mockSuite = req.header('X-Mock-Suite');
+        const mockState = req.header('X-Mock-State');
+
+        const reqOpts = { requestId, mockSuite, mockState, timeout: pluginCfg.timeout };
         let reqData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
 
         let ref = self.lookupMethod(mapping.serviceName, mapping.methodName, reqOpts);
@@ -102,16 +107,10 @@ function Handler(params = {}) {
         if (lodash.isFunction(refMethod)) {
           let promize;
           if (ref.isRemote) {
-            promize = refMethod(reqData, {
-              requestId: requestId,
-              timeout: pluginCfg.timeout,
-              opflowSeal: "on"
-            });
+            promize = refMethod(reqData, reqOpts);
           } else {
             promize = Promise.resolve().then(function () {
-              return refMethod(reqData, {
-                requestId: requestId
-              });
+              return refMethod(reqData, reqOpts);
             });
           }
           return promize.then(function (result) {
@@ -162,3 +161,26 @@ Handler.referenceHash = {
 };
 
 module.exports = Handler;
+
+function loadMappings (mappingStore) {
+  const mappings = {};
+  if (lodash.isString(mappingStore)) {
+    let store = {};
+    store[chores.getUUID()] = mappingStore;
+    mappingStore = store;
+  }
+  if (lodash.isObject(mappingStore)) {
+    lodash.forOwn(mappingStore, function(path, name) {
+      mappings[name] = require(path);
+    });
+  }
+  return mappings;
+}
+
+function joinMappings (mappingMap) {
+  const mappings = [];
+  lodash.forOwn(mappingMap, function(mappingList, name) {
+    mappings.push.apply(mappings, mappingList);
+  });
+  return mappings;
+}
