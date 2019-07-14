@@ -55,8 +55,8 @@ function Handler(params = {}) {
     lodash.forEach(mappings, function (mapping) {
       if (mapping.validatorSchema) {
         router.all(mapping.path, function (req, res, next) {
-          let requestId = tracelogService.getRequestId(req);
-          let reqTR = T.branch({ key: 'requestId', value: requestId });
+          const requestId = tracelogService.getRequestId(req);
+          const reqTR = T.branch({ key: 'requestId', value: requestId });
           L.has('info') && L.log('info', reqTR.add({
             mapAuthen: mapping.authenticate,
             mapPath: mapping.path,
@@ -75,8 +75,8 @@ function Handler(params = {}) {
           if (check._error) {
             check.isError = check._error;
             delete check._error;
-            if (lodash.isFunction(mapping.transformError)) {
-              output = mapping.transformError(check, req);
+            if (mapping.error && lodash.isFunction(mapping.error.transform)) {
+              output = mapping.error.transform(check, req);
             }
             res.send(mapping.validatorSchema.statusCode || 400, check);
           } else {
@@ -110,7 +110,10 @@ function Handler(params = {}) {
         const mockState = req.header('X-Mock-State');
 
         const reqOpts = { requestId, mockSuite, mockState, timeout: pluginCfg.timeout };
-        let reqData = mapping.transformRequest ? mapping.transformRequest(req) : req.body;
+        let reqData = req.body;
+        if (mapping.input && mapping.input.transform) {
+          reqData = mapping.input.transform(req);
+        }
 
         let ref = self.lookupMethod(mapping.serviceName, mapping.methodName, reqOpts);
         let refMethod = ref && ref.method;
@@ -125,8 +128,8 @@ function Handler(params = {}) {
           }
           return promize.then(function (result) {
             let output = { body: result };
-            if (lodash.isFunction(mapping.transformResponse)) {
-              output = mapping.transformResponse(result, req);
+            if (mapping.output && lodash.isFunction(mapping.output.transform)) {
+              output = mapping.output.transform(result, req);
               if (lodash.isEmpty(output) || !("body" in output)) {
                 output = { body: output };
               }
@@ -143,8 +146,8 @@ function Handler(params = {}) {
             return result;
           }).catch(function (failed) {
             var output = failed;
-            if (lodash.isFunction(mapping.transformError)) {
-              output = mapping.transformError(failed, req);
+            if (mapping.error && lodash.isFunction(mapping.error.transform)) {
+              output = mapping.error.transform(failed, req);
             }
             output.code = output.code || 500,
               output.text = output.text || 'Service request returns unknown status';
@@ -199,5 +202,37 @@ function joinMappings (mappingMap, mappings = []) {
   lodash.forOwn(mappingMap, function(mappingList, name) {
     mappings.push.apply(mappings, mappingList);
   });
-  return mappings;
+  return upgradeMappings(mappings);
+}
+
+function upgradeMappings(mappings = []) {
+  return lodash.map(mappings, upgradeMapping);
+}
+
+function upgradeMapping(mapping = {}) {
+  // input ~ transformRequest
+  mapping.input = mapping.input || {};
+  if (!lodash.isFunction(mapping.input.transform)) {
+    if (lodash.isFunction(mapping.transformRequest)) {
+      mapping.input.transform = mapping.transformRequest;
+      delete mapping.transformRequest;
+    }
+  }
+  // output ~ transformResponse
+  mapping.output = mapping.output || {};
+  if (!lodash.isFunction(mapping.output.transform)) {
+    if (lodash.isFunction(mapping.transformResponse)) {
+      mapping.output.transform = mapping.transformResponse;
+      delete mapping.transformResponse;
+    }
+  }
+  // error ~ transformError
+  mapping.error = mapping.error || {};
+  if (!lodash.isFunction(mapping.error.transform)) {
+    if (lodash.isFunction(mapping.transformError)) {
+      mapping.error.transform = mapping.transformError;
+      delete mapping.transformError;
+    }
+  }
+  return mapping;
 }
