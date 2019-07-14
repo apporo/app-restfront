@@ -184,7 +184,7 @@ if (BUILTIN_MAPPING_LOADER) {
 module.exports = Handler;
 
 function loadMappings (mappingStore) {
-  const mappingMap = {};
+  const mappingHash = {};
   if (lodash.isString(mappingStore)) {
     let store = {};
     store[chores.getUUID()] = mappingStore;
@@ -192,14 +192,14 @@ function loadMappings (mappingStore) {
   }
   if (lodash.isObject(mappingStore)) {
     lodash.forOwn(mappingStore, function(path, name) {
-      mappingMap[name] = require(path);
+      mappingHash[name] = require(path);
     });
   }
-  return mappingMap;
+  return mappingHash;
 }
 
-function joinMappings (mappingMap, mappings = []) {
-  lodash.forOwn(mappingMap, function(mappingList, name) {
+function joinMappings (mappingHash, mappings = []) {
+  lodash.forOwn(mappingHash, function(mappingList, name) {
     mappings.push.apply(mappings, mappingList);
   });
   return upgradeMappings(mappings);
