@@ -15,7 +15,6 @@ function Handler(params = {}) {
   const { sandboxRegistry, tracelogService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   let serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
-  let serviceResolverAvailable = true;
 
   let mappingHash;
   if (BUILTIN_MAPPING_LOADER) {
@@ -26,28 +25,42 @@ function Handler(params = {}) {
 
   const mappings = joinMappings(mappingHash);
 
-  this.lookupMethod = function (serviceName, methodName) {
-    let ref = {};
-    if (serviceResolverAvailable) {
-      let commander = sandboxRegistry.lookupService(serviceResolver);
-      if (commander) {
-        ref.isRemote = true;
-        ref.service = commander.lookupService(serviceName);
-        if (ref.service) {
-          ref.method = ref.service[methodName];
+  let serviceSelector;
+  if (lodash.isFunction(chores.newServiceSelector)) {
+    serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
+  } else {
+    const ServiceSelector = function (kwargs = {}) {
+      const { serviceResolver, sandboxRegistry } = kwargs;
+      let serviceResolverAvailable = true;
+      this.lookupMethod = function (serviceName, methodName) {
+        let ref = {};
+        if (serviceResolverAvailable) {
+          let resolver = sandboxRegistry.lookupService(serviceResolver);
+          if (resolver) {
+            ref.proxied = true;
+            ref.service = resolver.lookupService(serviceName);
+            if (ref.service) {
+              ref.method = ref.service[methodName];
+            }
+          } else {
+            serviceResolverAvailable = false;
+          }
         }
-      } else {
-        serviceResolverAvailable = false;
+        if (!ref.method) {
+          ref.proxied = false;
+          ref.service = sandboxRegistry.lookupService(serviceName);
+          if (ref.service) {
+            ref.method = ref.service[methodName];
+          }
+        }
+        return ref;
       }
     }
-    if (!ref.method) {
-      ref.isRemote = false;
-      ref.service = sandboxRegistry.lookupService(serviceName);
-      if (ref.service) {
-        ref.method = ref.service[methodName];
-      }
-    }
-    return ref;
+    serviceSelector = new ServiceSelector({ serviceResolver, sandboxRegistry });
+  }
+
+  this.lookupMethod = function(serviceName, methodName) {
+    return serviceSelector.lookupMethod(serviceName, methodName);
   }
 
   this.validator = function (express) {
@@ -115,7 +128,7 @@ function Handler(params = {}) {
           reqData = mapping.input.transform(req);
         }
 
-        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName, reqOpts);
+        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
         let refMethod = ref && ref.method;
         if (lodash.isFunction(refMethod)) {
           let promize;
