@@ -4,16 +4,26 @@ var mappings = [
   {
     path: '/fibonacci/calc/:number',
     method: 'GET',
-    transformRequest: function(req) {
-      return { number: req.params.number }
+    input: {
+      transform: function (req) {
+        return { number: req.params.number }
+      },
+      validate: function () {
+        return true;
+      },
+      jsonschema: {}
     },
     serviceName: 'application/example',
     methodName: 'fibonacci',
-    transformError: function(err, req) {
-      return err;
+    error: {
+      transform: function(err, req) {
+        return err;
+      },
     },
-    transformResponse: function(result, req) {
-      return result;
+    output: {
+      transform: function(result, req) {
+        return result;
+      },
     }
   }
 ]

@@ -15,6 +15,11 @@ export DEVEBOT_SANDBOX=old-mappings
 node test/app
 ```
 
+```shell
+export DEVEBOT_SANDBOX=new-mappings
+node test/app
+```
+
 or start the example server with mocking functions:
 
 ```shell

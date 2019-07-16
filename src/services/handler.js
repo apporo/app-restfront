@@ -140,36 +140,36 @@ function Handler(params = {}) {
             });
           }
           return promize.then(function (result) {
-            let output = { body: result };
+            let packet = { body: result };
             if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-              output = mapping.output.transform(result, req);
-              if (lodash.isEmpty(output) || !("body" in output)) {
-                output = { body: output };
+              packet = mapping.output.transform(result, req);
+              if (lodash.isEmpty(packet) || !("body" in packet)) {
+                packet = { body: packet };
               }
             }
-            L.has('trace') && L.log('trace', reqTR.add({ result, output }).toMessage({
+            L.has('trace') && L.log('trace', reqTR.add({ result, packet }).toMessage({
               text: 'Request[${requestId}] is completed'
             }));
-            if (lodash.isObject(output.headers)) {
-              lodash.forOwn(output.headers, function (value, key) {
+            if (lodash.isObject(packet.headers)) {
+              lodash.forOwn(packet.headers, function (value, key) {
                 res.set(key, value);
               });
             }
-            res.json(output.body);
+            res.json(packet.body);
             return result;
           }).catch(function (failed) {
-            var output = failed;
+            var packet = failed;
             if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-              output = mapping.error.transform(failed, req);
+              packet = mapping.error.transform(failed, req);
             }
-            output.code = output.code || 500,
-              output.text = output.text || 'Service request returns unknown status';
-            L.has('error') && L.log('error', reqTR.add(output).toMessage({
+            packet.code = packet.code || 500;
+            packet.text = packet.text || 'Service request returns unknown status';
+            L.has('error') && L.log('error', reqTR.add(packet).toMessage({
               text: 'Request[${requestId}] has failed'
             }));
-            res.status(output.code).json({
-              code: output.code,
-              message: output.text
+            res.status(packet.code).json({
+              code: packet.code,
+              message: packet.text
             });
           });
         } else {
