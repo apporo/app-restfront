@@ -68,21 +68,18 @@ function Handler(params = {}) {
     lodash.forEach(mappings, function (mapping) {
       if (mapping.validatorSchema) {
         router.all(mapping.path, function (req, res, next) {
+          if (req.method !== mapping.method) return next();
           const requestId = tracelogService.getRequestId(req);
           const reqTR = T.branch({ key: 'requestId', value: requestId });
           L.has('info') && L.log('info', reqTR.add({
-            mapAuthen: mapping.authenticate,
             mapPath: mapping.path,
             mapMethod: mapping.method,
             url: req.url,
             method: req.method,
             validatorSchema: mapping.validatorSchema
           }).toMessage({
-            text: 'Validate for Request[${requestId}] from [${method}]${url} with schema is [${validatorSchema}]'
+            text: 'Validate for Request[${requestId}] from [${method}]${url} with schema [${validatorSchema}]'
           }, 'direct'));
-
-          if (req.method !== mapping.method) return next();
-
           let validator = new Validator(mapping.validatorSchema);
           let check = validator.check(req.body);
           if (check._error) {
@@ -106,10 +103,10 @@ function Handler(params = {}) {
     const router = express.Router();
     lodash.forEach(mappings, function (mapping) {
       router.all(mapping.path, function (req, res, next) {
+        if (req.method !== mapping.method) return next();
         const requestId = tracelogService.getRequestId(req);
         const reqTR = T.branch({ key: 'requestId', value: requestId });
         L.has('info') && L.log('info', reqTR.add({
-          mapAuthen: mapping.authenticate,
           mapPath: mapping.path,
           mapMethod: mapping.method,
           url: req.url,
@@ -117,7 +114,6 @@ function Handler(params = {}) {
         }).toMessage({
           text: 'Request[${requestId}] from [${method}]${url}'
         }, 'direct'));
-        if (req.method !== mapping.method) return next();
 
         const mockSuite = req.header('X-Mock-Suite');
         const mockState = req.header('X-Mock-State');
