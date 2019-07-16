@@ -29,7 +29,7 @@ function Handler(params = {}) {
   if (lodash.isFunction(chores.newServiceSelector)) {
     serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
   } else {
-    const ServiceSelector = function (kwargs = {}) {
+    serviceSelector = new function ServiceSelector(kwargs = {}) {
       const { serviceResolver, sandboxRegistry } = kwargs;
       let serviceResolverAvailable = true;
       this.lookupMethod = function (serviceName, methodName) {
@@ -55,8 +55,7 @@ function Handler(params = {}) {
         }
         return ref;
       }
-    }
-    serviceSelector = new ServiceSelector({ serviceResolver, sandboxRegistry });
+    } ({ serviceResolver, sandboxRegistry });
   }
 
   this.lookupMethod = function(serviceName, methodName) {
@@ -115,18 +114,18 @@ function Handler(params = {}) {
           text: 'Req[${requestId}] from [${method}]${url}'
         }, 'direct'));
 
+        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
+        let refMethod = ref && ref.method;
+        if (!lodash.isFunction(refMethod)) return next();
+
         const mockSuite = req.header('X-Mock-Suite');
         const mockState = req.header('X-Mock-State');
-
         const reqOpts = { requestId, mockSuite, mockState, timeout: pluginCfg.timeout };
+
         let reqData = req.body;
         if (mapping.input && mapping.input.transform) {
           reqData = mapping.input.transform(req);
         }
-
-        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
-        let refMethod = ref && ref.method;
-        if (!lodash.isFunction(refMethod)) return next();
 
         let promize;
         if (ref.isRemote) {
