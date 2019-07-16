@@ -114,27 +114,27 @@ function Handler(params = {}) {
           text: 'Req[${requestId}] from [${method}]${url}'
         }, 'direct'));
 
-        let ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
-        let refMethod = ref && ref.method;
+        const ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
+        const refMethod = ref && ref.method;
         if (!lodash.isFunction(refMethod)) return next();
 
         const mockSuite = req.header('X-Mock-Suite');
         const mockState = req.header('X-Mock-State');
         const reqOpts = { requestId, mockSuite, mockState, timeout: pluginCfg.timeout };
 
-        let reqData = req.body;
-        if (mapping.input && mapping.input.transform) {
-          reqData = mapping.input.transform(req);
-        }
+        let promize = Promise.resolve();
 
-        let promize;
-        if (ref.isRemote) {
-          promize = refMethod(reqData, reqOpts);
-        } else {
-          promize = Promise.resolve().then(function () {
-            return refMethod(reqData, reqOpts);
-          });
-        }
+        promize = promize.then(function () {
+          if (mapping.input && mapping.input.transform) {
+            return mapping.input.transform(req);
+          }
+          return req.body;
+        });
+
+        promize = promize.then(function (reqData) {
+          return refMethod(reqData, reqOpts);
+        });
+
         return promize.then(function (result) {
           let packet = { body: result };
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
@@ -152,11 +152,14 @@ function Handler(params = {}) {
             });
           }
           res.json(packet.body);
-          return result;
         }).catch(function (failed) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
             packet = mapping.error.transform(failed, req);
+            packet = packet || {};
+            packet.body = packet.body || {
+              message: "mapping.error.transform() output don't have body field"
+            }
           } else {
             if (failed instanceof Error) {
               packet.body = {
@@ -182,9 +185,6 @@ function Handler(params = {}) {
             packet.body.type = (typeof failed);
           }
           packet.statusCode = packet.statusCode || 500;
-          packet.body = packet.body || {
-            message: "mapping.error.transform() output don't have body field"
-          }
           if (lodash.isObject(packet.headers)) {
             lodash.forOwn(packet.headers, function (value, key) {
               res.set(key, value);
