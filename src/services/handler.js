@@ -78,7 +78,7 @@ function Handler(params = {}) {
             method: req.method,
             validatorSchema: mapping.validatorSchema
           }).toMessage({
-            text: 'Validate for Request[${requestId}] from [${method}]${url} with schema [${validatorSchema}]'
+            text: 'Validate for Req[${requestId}] from [${method}]${url} with schema [${validatorSchema}]'
           }, 'direct'));
           let validator = new Validator(mapping.validatorSchema);
           let check = validator.check(req.body);
@@ -112,7 +112,7 @@ function Handler(params = {}) {
           url: req.url,
           method: req.method
         }).toMessage({
-          text: 'Request[${requestId}] from [${method}]${url}'
+          text: 'Req[${requestId}] from [${method}]${url}'
         }, 'direct'));
 
         const mockSuite = req.header('X-Mock-Suite');
@@ -144,7 +144,7 @@ function Handler(params = {}) {
               }
             }
             L.has('trace') && L.log('trace', reqTR.add({ result, packet }).toMessage({
-              text: 'Request[${requestId}] is completed'
+              text: 'Req[${requestId}] is completed'
             }));
             if (lodash.isObject(packet.headers)) {
               lodash.forOwn(packet.headers, function (value, key) {
@@ -154,19 +154,50 @@ function Handler(params = {}) {
             res.json(packet.body);
             return result;
           }).catch(function (failed) {
-            var packet = failed;
+            let packet = {};
             if (mapping.error && lodash.isFunction(mapping.error.transform)) {
               packet = mapping.error.transform(failed, req);
+            } else {
+              if (failed instanceof Error) {
+                packet.body = {
+                  code: failed.code,
+                  message: failed.message,
+                }
+                if (chores.isDevelopmentMode()) {
+                  packet.body = failed.stack;
+                }
+              } else if (lodash.isString(failed)) {
+                packet.body = {
+                  message: failed
+                }
+              } else if (failed != null) {
+                packet.body = {
+                  message: 'Error value: [' + failed + ']'
+                }
+              } else {
+                packet.body = {
+                  message: 'Error is null'
+                }
+              }
+              packet.body.type = (typeof failed);
             }
-            packet.code = packet.code || 500;
-            packet.text = packet.text || 'Service request returns unknown status';
+            packet.statusCode = packet.statusCode || 500;
+            packet.body = packet.body || {
+              message: "mapping.error.transform() output don't have body field"
+            }
+            if (lodash.isObject(packet.headers)) {
+              lodash.forOwn(packet.headers, function (value, key) {
+                res.set(key, value);
+              });
+            }
             L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-              text: 'Request[${requestId}] has failed'
+              text: 'Req[${requestId}] has failed'
             }));
-            res.status(packet.code).json({
-              code: packet.code,
-              message: packet.text
-            });
+            if (lodash.isString(packet.body)) {
+              res.status(packet.statusCode).text(packet.body);
+            } else {
+              res.status(packet.statusCode).json(packet.body);
+            }
           });
         } else {
           next();
