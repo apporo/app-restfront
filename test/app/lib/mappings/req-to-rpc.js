@@ -1,31 +1,33 @@
 'use strict';
 
-var mappings = [
-  {
-    path: '/fibonacci/calc/:number',
-    method: 'GET',
-    input: {
-      transform: function (req) {
-        return { number: req.params.number }
+var mappings = {
+  apimaps: [
+    {
+      path: '/fibonacci/calc/:number',
+      method: 'GET',
+      input: {
+        transform: function (req) {
+          return { number: req.params.number }
+        },
+        validate: function () {
+          return true;
+        },
+        jsonschema: {}
       },
-      validate: function () {
-        return true;
+      serviceName: 'application/example',
+      methodName: 'fibonacci',
+      error: {
+        transform: function(err, req) {
+          return err;
+        },
       },
-      jsonschema: {}
-    },
-    serviceName: 'application/example',
-    methodName: 'fibonacci',
-    error: {
-      transform: function(err, req) {
-        return err;
-      },
-    },
-    output: {
-      transform: function(result, req) {
-        return result;
-      },
+      output: {
+        transform: function(result, req) {
+          return result;
+        },
+      }
     }
-  }
-]
+  ]
+}
 
 module.exports = mappings;

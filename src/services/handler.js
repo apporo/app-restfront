@@ -237,7 +237,10 @@ function loadMappings (mappingStore) {
 
 function joinMappings (mappingHash, mappings = []) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
-    mappings.push.apply(mappings, mappingList);
+    const list = lodash.get(mappingList, 'apimaps', mappingList);
+    if (lodash.isArray(list)) {
+      mappings.push.apply(mappings, list);
+    }
   });
   return upgradeMappings(mappings);
 }
