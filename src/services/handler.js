@@ -5,6 +5,7 @@ const Promise = Devebot.require('bluebird');
 const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
+const uaParser = require('ua-parser-js');
 
 const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
@@ -120,6 +121,11 @@ function Handler(params = {}) {
         const refMethod = ref && ref.method;
         if (!lodash.isFunction(refMethod)) return next();
 
+        let userAgent;
+        if (pluginCfg.userAgentEnabled) {
+          userAgent = uaParser(req.header('user-agent'));
+        }
+
         const clientType = req.header(pluginCfg.clientTypeHeaderName);
         const clientVersion = req.header(pluginCfg.clientVersionHeaderName);
         const systemPhase = req.header(pluginCfg.systemPhaseHeaderName);
@@ -130,8 +136,8 @@ function Handler(params = {}) {
         const timeout = mapping.timeout || pluginCfg.requestTimeout;
 
         const reqOpts = {
-          segmentId, requestId,
-          clientType, clientVersion, systemPhase, mockSuite, mockState, timeout
+          segmentId, requestId, timeout,
+          clientType, clientVersion, systemPhase, mockSuite, mockState, userAgent
         };
 
         let promize = Promise.resolve();
