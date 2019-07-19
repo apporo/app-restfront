@@ -104,8 +104,10 @@ function Handler(params = {}) {
       router.all(mapping.path, function (req, res, next) {
         if (req.method !== mapping.method) return next();
         const requestId = tracelogService.getRequestId(req);
+        const segmentId = req.header(pluginCfg.segmentIdHeaderName);
         const reqTR = T.branch({ key: 'requestId', value: requestId });
         L.has('info') && L.log('info', reqTR.add({
+          segmentId: segmentId,
           mapPath: mapping.path,
           mapMethod: mapping.method,
           url: req.url,
@@ -128,7 +130,8 @@ function Handler(params = {}) {
         const timeout = mapping.timeout || pluginCfg.requestTimeout;
 
         const reqOpts = {
-          requestId, clientType, clientVersion, systemPhase, mockSuite, mockState, timeout
+          requestId, segmentId,
+          clientType, clientVersion, systemPhase, mockSuite, mockState, timeout
         };
 
         let promize = Promise.resolve();

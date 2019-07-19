@@ -43,6 +43,9 @@ module.exports = {
           "requestIdHeaderName": {
             "type": "string"
           },
+          "segmentIdHeaderName": {
+            "type": "string"
+          },
           "clientTypeHeaderName": {
             "type": "string"
           },

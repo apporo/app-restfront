@@ -2,6 +2,7 @@ module.exports = {
   plugins: {
     appRestfront: {
       requestIdHeaderName: 'X-Request-Id',
+      segmentIdHeaderName: 'X-Segment-Id',
       clientTypeHeaderName: 'X-App-Type',
       clientVersionHeaderName: 'X-App-Version',
       systemPhaseHeaderName: 'X-System-Phase',
