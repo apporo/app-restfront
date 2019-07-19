@@ -130,7 +130,7 @@ function Handler(params = {}) {
         const timeout = mapping.timeout || pluginCfg.requestTimeout;
 
         const reqOpts = {
-          requestId, segmentId,
+          segmentId, requestId,
           clientType, clientVersion, systemPhase, mockSuite, mockState, timeout
         };
 
@@ -142,7 +142,7 @@ function Handler(params = {}) {
 
         promize = promize.then(function () {
           if (mapping.input && mapping.input.transform) {
-            return mapping.input.transform(req);
+            return mapping.input.transform(req, reqOpts);
           }
           return req.body;
         });
@@ -154,7 +154,7 @@ function Handler(params = {}) {
         promize = promize.then(function (result) {
           let packet = { body: result };
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-            packet = mapping.output.transform(result, req);
+            packet = mapping.output.transform(result, req, reqOpts);
             if (lodash.isEmpty(packet) || !("body" in packet)) {
               packet = { body: packet };
             }
@@ -173,7 +173,7 @@ function Handler(params = {}) {
         promize = promize.catch(Promise.TimeoutError, function(err) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(failed, req);
+            packet = mapping.error.transform(failed, req, reqOpts);
             packet = packet || {};
           }
           packet.statusCode = packet.statusCode || 408;
@@ -191,7 +191,7 @@ function Handler(params = {}) {
         promize = promize.catch(function (failed) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(failed, req);
+            packet = mapping.error.transform(failed, req, reqOpts);
             packet = packet || {};
             packet.body = packet.body || {
               message: "mapping.error.transform() output don't have body field"
