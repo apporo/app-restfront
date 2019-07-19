@@ -40,6 +40,27 @@ module.exports = {
             },
             "additionalProperties": false
           },
+          "requestIdHeaderName": {
+            "type": "string"
+          },
+          "clientTypeHeaderName": {
+            "type": "string"
+          },
+          "clientVersionHeaderName": {
+            "type": "string"
+          },
+          "systemPhaseHeaderName": {
+            "type": "string"
+          },
+          "mockSuiteHeaderName": {
+            "type": "string"
+          },
+          "mockStateHeaderName": {
+            "type": "string"
+          },
+          "requestTimeout": {
+            "type": "number"
+          },
           "autowired": {
             "type": "boolean"
           },

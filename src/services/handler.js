@@ -118,11 +118,24 @@ function Handler(params = {}) {
         const refMethod = ref && ref.method;
         if (!lodash.isFunction(refMethod)) return next();
 
-        const mockSuite = req.header('X-Mock-Suite');
-        const mockState = req.header('X-Mock-State');
-        const reqOpts = { requestId, mockSuite, mockState, timeout: pluginCfg.timeout };
+        const clientType = req.header(pluginCfg.clientTypeHeaderName);
+        const clientVersion = req.header(pluginCfg.clientVersionHeaderName);
+        const systemPhase = req.header(pluginCfg.systemPhaseHeaderName);
+
+        const mockSuite = req.header(pluginCfg.mockSuiteHeaderName);
+        const mockState = req.header(pluginCfg.mockStateHeaderName);
+
+        const timeout = mapping.timeout || pluginCfg.requestTimeout;
+
+        const reqOpts = {
+          requestId, clientType, clientVersion, systemPhase, mockSuite, mockState, timeout
+        };
 
         let promize = Promise.resolve();
+
+        if (timeout && timeout > 0) {
+          promize = promize.timeout(timeout);
+        }
 
         promize = promize.then(function () {
           if (mapping.input && mapping.input.transform) {
@@ -135,7 +148,7 @@ function Handler(params = {}) {
           return refMethod(reqData, reqOpts);
         });
 
-        return promize.then(function (result) {
+        promize = promize.then(function (result) {
           let packet = { body: result };
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
             packet = mapping.output.transform(result, req);
@@ -152,7 +165,27 @@ function Handler(params = {}) {
             });
           }
           res.json(packet.body);
-        }).catch(function (failed) {
+        });
+
+        promize = promize.catch(Promise.TimeoutError, function(err) {
+          let packet = {};
+          if (mapping.error && lodash.isFunction(mapping.error.transform)) {
+            packet = mapping.error.transform(failed, req);
+            packet = packet || {};
+          }
+          packet.statusCode = packet.statusCode || 408;
+          if (lodash.isObject(packet.headers)) {
+            lodash.forOwn(packet.headers, function (value, key) {
+              res.set(key, value);
+            });
+          }
+          L.has('error') && L.log('error', reqTR.add(packet).toMessage({
+            text: 'Req[${requestId}] has timeout'
+          }));
+          res.status(packet.statusCode).end();
+        });
+
+        promize = promize.catch(function (failed) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
             packet = mapping.error.transform(failed, req);
@@ -198,6 +231,12 @@ function Handler(params = {}) {
           } else {
             res.status(packet.statusCode).json(packet.body);
           }
+        });
+
+        promize.finally(function () {
+          L.has('silly') && L.log('silly', reqTR.toMessage({
+            text: 'Req[${requestId}] end'
+          }));
         });
       });
     });
