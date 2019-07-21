@@ -10,9 +10,6 @@ module.exports = {
           "apiPath": {
             "type": "string"
           },
-          "apiVersion": {
-            "type": "string"
-          },
           "serviceResolver": {
             "type": "string"
           },

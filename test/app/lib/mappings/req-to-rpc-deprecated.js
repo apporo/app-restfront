@@ -2,7 +2,7 @@
 
 var mappings = [
   {
-    path: '/fibonacci/calc/:number',
+    path: '/:apiVersion/fibonacci/calc/:number',
     method: 'GET',
     transformRequest: function(req) {
       return { number: req.params.number }

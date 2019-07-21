@@ -9,8 +9,7 @@ function Service(params = {}) {
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const contextPath = pluginCfg.contextPath || '/restfront';
   const apiPath = pluginCfg.apiPath || '';
-  const apiVersion = pluginCfg.apiVersion || '';
-  const apiFullPath = path.join(contextPath, apiPath, apiVersion);
+  const apiFullPath = path.join(contextPath, apiPath);
   const staticpages = pluginCfg.static;
   const express = webweaverService.express;
 

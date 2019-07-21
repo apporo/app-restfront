@@ -88,7 +88,7 @@ function Handler(params = {}) {
             if (mapping.error && lodash.isFunction(mapping.error.transform)) {
               output = mapping.error.transform(check, req);
             }
-            res.send(mapping.validatorSchema.statusCode || 400, check);
+            res.status(mapping.validatorSchema.statusCode || 400).send(check);
           } else {
             next();
           }
@@ -203,7 +203,11 @@ function Handler(params = {}) {
               message: "mapping.error.transform() output don't have body field"
             }
           } else {
-            if (failed instanceof Error) {
+            if (failed == null) {
+              packet.body = {
+                message: 'Error is null'
+              }
+            } else if (failed instanceof Error) {
               packet.body = {
                 code: failed.code,
                 message: failed.message,
@@ -215,13 +219,15 @@ function Handler(params = {}) {
               packet.body = {
                 message: failed
               }
-            } else if (failed != null) {
+            } else if (lodash.isObject(failed)) {
               packet.body = {
-                message: 'Error value: [' + failed + ']'
+                message: 'Error: ' + JSON.stringify(failed),
+                data: failed
               }
             } else {
               packet.body = {
-                message: 'Error is null'
+                message: 'Error: ' + failed,
+                data: failed
               }
             }
             packet.body.type = (typeof failed);
@@ -233,7 +239,7 @@ function Handler(params = {}) {
             });
           }
           L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] has failed'
+            text: 'Req[${requestId}] has failed, status[${statusCode}], body: ${body}'
           }));
           if (lodash.isString(packet.body)) {
             res.status(packet.statusCode).text(packet.body);
@@ -259,11 +265,7 @@ Handler.referenceHash = {
 };
 
 if (BUILTIN_MAPPING_LOADER) {
-  Handler.referenceHash = {
-    "mappingLoader": "devebot/mappingLoader",
-    "sandboxRegistry": "devebot/sandboxRegistry",
-    "tracelogService": "app-tracelog/tracelogService",
-  };
+  Handler.referenceHash["mappingLoader"] = "devebot/mappingLoader";
 }
 
 module.exports = Handler;

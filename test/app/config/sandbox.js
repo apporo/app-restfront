@@ -3,14 +3,12 @@
 var path = require('path');
 var contextPath = '/restfront';
 var apiPath = 'rest';
-var apiVersion = 'v2';
 
 module.exports = {
   plugins: {
     appRestfront: {
       contextPath: contextPath,
       apiPath: apiPath,
-      apiVersion: apiVersion,
       mappingStore: {
         "example-mappings": path.join(__dirname, '../lib/mappings/req-to-rpc')
       },
@@ -20,7 +18,7 @@ module.exports = {
       }
     },
     appTracelog: {
-      tracingPaths: [ path.join(contextPath, apiPath, apiVersion) ],
+      tracingPaths: [ path.join(contextPath, apiPath) ],
       tracingBoundaryEnabled: true
     }
   }
