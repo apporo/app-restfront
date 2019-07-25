@@ -86,7 +86,7 @@ function Handler(params = {}) {
             check.isError = check._error;
             delete check._error;
             if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-              output = mapping.error.transform(check, req);
+              output = mapping.error.transform.call(mapping.error, check, req);
             }
             res.status(mapping.validatorSchema.statusCode || 400).send(check);
           } else {
@@ -148,10 +148,16 @@ function Handler(params = {}) {
 
         promize = promize.then(function () {
           if (mapping.input && mapping.input.transform) {
-            return mapping.input.transform(req, reqOpts);
+            return mapping.input.transform.call(mapping.input, req, reqOpts);
           }
           return req.body;
         });
+
+        if (mapping.input.mutate.rename) {
+          prommize = promize.then(function (reqData) {
+            return mutateRenameFields(reqData, mapping.input.mutate.rename);
+          })
+        }
 
         promize = promize.then(function (reqData) {
           return refMethod(reqData, reqOpts);
@@ -160,10 +166,13 @@ function Handler(params = {}) {
         promize = promize.then(function (result) {
           let packet = { body: result };
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-            packet = mapping.output.transform(result, req, reqOpts);
+            packet = mapping.output.transform.call(mapping.output, result, req, reqOpts);
             if (lodash.isEmpty(packet) || !("body" in packet)) {
               packet = { body: packet };
             }
+          }
+          if (mapping.output.mutate.rename) {
+            packet = mutateRenameFields(packet, mapping.output.mutate.rename);
           }
           L.has('trace') && L.log('trace', reqTR.add({ result, packet }).toMessage({
             text: 'Req[${requestId}] is completed'
@@ -179,8 +188,11 @@ function Handler(params = {}) {
         promize = promize.catch(Promise.TimeoutError, function(err) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(failed, req, reqOpts);
+            packet = mapping.error.transform.call(mapping.error, failed, req, reqOpts);
             packet = packet || {};
+          }
+          if (mapping.error.mutate.rename) {
+            packet = mutateRenameFields(packet, mapping.error.mutate.rename);
           }
           packet.statusCode = packet.statusCode || 408;
           if (lodash.isObject(packet.headers)) {
@@ -197,7 +209,7 @@ function Handler(params = {}) {
         promize = promize.catch(function (failed) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(failed, req, reqOpts);
+            packet = mapping.error.transform.call(mapping.error, failed, req, reqOpts);
             packet = packet || {};
             packet.body = packet.body || {
               message: "mapping.error.transform() output don't have body field"
@@ -231,6 +243,9 @@ function Handler(params = {}) {
               }
             }
             packet.body.type = (typeof failed);
+          }
+          if (mapping.error.mutate.rename) {
+            packet = mutateRenameFields(packet, mapping.error.mutate.rename);
           }
           packet.statusCode = packet.statusCode || 500;
           if (lodash.isObject(packet.headers)) {
@@ -308,6 +323,7 @@ function upgradeMapping(mapping = {}) {
       delete mapping.transformRequest;
     }
   }
+  mapping.input.mutate = mapping.input.mutate || {};
   // output ~ transformResponse
   mapping.output = mapping.output || {};
   if (!lodash.isFunction(mapping.output.transform)) {
@@ -316,6 +332,7 @@ function upgradeMapping(mapping = {}) {
       delete mapping.transformResponse;
     }
   }
+  mapping.output.mutate = mapping.output.mutate || {};
   // error ~ transformError
   mapping.error = mapping.error || {};
   if (!lodash.isFunction(mapping.error.transform)) {
@@ -324,5 +341,20 @@ function upgradeMapping(mapping = {}) {
       delete mapping.transformError;
     }
   }
+  mapping.error.mutate = mapping.error.mutate || {};
   return mapping;
+}
+
+function mutateRenameFields (payload, nameMappings) {
+  if (nameMappings && lodash.isObject(nameMappings)) {
+    for(const oldName in nameMappings) {
+      const val = lodash.get(payload, oldName);
+      if (!lodash.isUndefined(val)) {
+        const newName = nameMappings[oldName];
+        lodash.unset(payload, oldName);
+        lodash.set(payload, newName, val);
+      }
+    }
+  }
+  return payload;
 }
