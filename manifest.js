@@ -49,6 +49,9 @@ module.exports = {
           "clientVersionHeaderName": {
             "type": "string"
           },
+          "languageCodeHeaderName": {
+            "type": "string"
+          },
           "systemPhaseHeaderName": {
             "type": "string"
           },

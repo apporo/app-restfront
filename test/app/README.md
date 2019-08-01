@@ -12,12 +12,12 @@ Start the example server:
 
 ```shell
 export DEVEBOT_SANDBOX=old-mappings
-node test/app
+npm run clean && npm run build && node test/app
 ```
 
 ```shell
 export DEVEBOT_SANDBOX=new-mappings
-node test/app
+npm run clean && npm run build && node test/app
 ```
 
 or start the example server with mocking functions:
@@ -27,5 +27,6 @@ DEVEBOT_TEXTURE=mock node test/app
 ```
 
 ```shell
-curl --request GET --url http://localhost:7979/restfront/rest/v2/fibonacci/calc/47
+curl --request GET \
+--url http://localhost:7979/restfront/rest/v2/fibonacci/calc/47
 ```

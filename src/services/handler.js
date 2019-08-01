@@ -26,38 +26,7 @@ function Handler(params = {}) {
 
   const mappings = joinMappings(mappingHash);
 
-  let serviceSelector;
-  if (lodash.isFunction(chores.newServiceSelector)) {
-    serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
-  } else {
-    serviceSelector = new function ServiceSelector(kwargs = {}) {
-      const { serviceResolver, sandboxRegistry } = kwargs;
-      let serviceResolverAvailable = true;
-      this.lookupMethod = function (serviceName, methodName) {
-        let ref = {};
-        if (serviceResolverAvailable) {
-          let resolver = sandboxRegistry.lookupService(serviceResolver);
-          if (resolver) {
-            ref.proxied = true;
-            ref.service = resolver.lookupService(serviceName);
-            if (ref.service) {
-              ref.method = ref.service[methodName];
-            }
-          } else {
-            serviceResolverAvailable = false;
-          }
-        }
-        if (!ref.method) {
-          ref.proxied = false;
-          ref.service = sandboxRegistry.lookupService(serviceName);
-          if (ref.service) {
-            ref.method = ref.service[methodName];
-          }
-        }
-        return ref;
-      }
-    } ({ serviceResolver, sandboxRegistry });
-  }
+  const serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
 
   this.lookupMethod = function(serviceName, methodName) {
     return serviceSelector.lookupMethod(serviceName, methodName);
@@ -105,7 +74,7 @@ function Handler(params = {}) {
       router.all(mapping.path, function (req, res, next) {
         if (req.method !== mapping.method) return next();
         const requestId = tracelogService.getRequestId(req);
-        const segmentId = req.header(pluginCfg.segmentIdHeaderName);
+        const segmentId = req.get(pluginCfg.segmentIdHeaderName);
         const reqTR = T.branch({ key: 'requestId', value: requestId });
         L.has('info') && L.log('info', reqTR.add({
           segmentId: segmentId,
@@ -123,21 +92,23 @@ function Handler(params = {}) {
 
         let userAgent;
         if (pluginCfg.userAgentEnabled) {
-          userAgent = uaParser(req.header('user-agent'));
+          userAgent = uaParser(req.get('user-agent'));
         }
 
-        const clientType = req.header(pluginCfg.clientTypeHeaderName);
-        const clientVersion = req.header(pluginCfg.clientVersionHeaderName);
-        const systemPhase = req.header(pluginCfg.systemPhaseHeaderName);
+        const clientType = req.get(pluginCfg.clientTypeHeaderName);
+        const clientVersion = req.get(pluginCfg.clientVersionHeaderName);
+        const languageCode = req.get(pluginCfg.languageCodeHeaderName);
+        const systemPhase = req.get(pluginCfg.systemPhaseHeaderName);
 
-        const mockSuite = req.header(pluginCfg.mockSuiteHeaderName);
-        const mockState = req.header(pluginCfg.mockStateHeaderName);
+        const mockSuite = req.get(pluginCfg.mockSuiteHeaderName);
+        const mockState = req.get(pluginCfg.mockStateHeaderName);
 
         const timeout = mapping.timeout || pluginCfg.requestTimeout;
 
         const reqOpts = {
           segmentId, requestId, timeout,
-          clientType, clientVersion, systemPhase, mockSuite, mockState, userAgent
+          clientType, clientVersion, languageCode, systemPhase,
+          mockSuite, mockState, userAgent
         };
 
         let promize = Promise.resolve();
