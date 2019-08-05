@@ -54,9 +54,6 @@ function Handler(params = {}) {
           if (check._error) {
             check.isError = check._error;
             delete check._error;
-            if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-              output = mapping.error.transform.call(mapping.error, check, req);
-            }
             res.status(mapping.validatorSchema.statusCode || 400).send(check);
           } else {
             next();
@@ -119,13 +116,13 @@ function Handler(params = {}) {
 
         promize = promize.then(function () {
           if (mapping.input && mapping.input.transform) {
-            return mapping.input.transform.call(mapping.input, req, reqOpts);
+            return mapping.input.transform(req, reqOpts);
           }
           return req.body;
         });
 
         if (mapping.input.mutate.rename) {
-          prommize = promize.then(function (reqData) {
+          promize = promize.then(function (reqData) {
             return mutateRenameFields(reqData, mapping.input.mutate.rename);
           })
         }
@@ -137,7 +134,7 @@ function Handler(params = {}) {
         promize = promize.then(function (result) {
           let packet = { body: result };
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-            packet = mapping.output.transform.call(mapping.output, result, req, reqOpts);
+            packet = mapping.output.transform(result, req, reqOpts);
             if (lodash.isEmpty(packet) || !("body" in packet)) {
               packet = { body: packet };
             }
@@ -159,7 +156,7 @@ function Handler(params = {}) {
         promize = promize.catch(Promise.TimeoutError, function(err) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform.call(mapping.error, failed, req, reqOpts);
+            packet = mapping.error.transform(err, req, reqOpts);
             packet = packet || {};
           }
           if (mapping.error.mutate.rename) {
@@ -180,7 +177,7 @@ function Handler(params = {}) {
         promize = promize.catch(function (failed) {
           let packet = {};
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform.call(mapping.error, failed, req, reqOpts);
+            packet = mapping.error.transform(failed, req, reqOpts);
             packet = packet || {};
             packet.body = packet.body || {
               message: "mapping.error.transform() output don't have body field"
@@ -318,7 +315,7 @@ function upgradeMapping(mapping = {}) {
 
 function mutateRenameFields (payload, nameMappings) {
   if (nameMappings && lodash.isObject(nameMappings)) {
-    for(const oldName in nameMappings) {
+    for (const oldName in nameMappings) {
       const val = lodash.get(payload, oldName);
       if (!lodash.isUndefined(val)) {
         const newName = nameMappings[oldName];
