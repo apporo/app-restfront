@@ -1,6 +1,7 @@
 'use strict';
 
 var mappings = {
+  apiPath: '/sub',
   apimaps: [
     {
       path: '/:apiVersion/fibonacci/calc/:number',

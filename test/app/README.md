@@ -8,6 +8,13 @@ Install the dependencies of app-restfront:
 npm install
 ```
 
+Show all of log messages:
+
+```shell
+export DEBUG=devebot*,app*
+export LOGOLITE_DEBUGLOG_ENABLED=true
+```
+
 Start the example server:
 
 ```shell
@@ -28,5 +35,5 @@ DEVEBOT_TEXTURE=mock node test/app
 
 ```shell
 curl --request GET \
---url http://localhost:7979/restfront/rest/v2/fibonacci/calc/47
+--url http://localhost:7979/restfront/rest/sub/v2/fibonacci/calc/47
 ```

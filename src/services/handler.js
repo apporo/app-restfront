@@ -6,6 +6,7 @@ const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 const uaParser = require('ua-parser-js');
+const path = require('path');
 
 const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
@@ -270,8 +271,22 @@ function loadMappings (mappingStore) {
 
 function joinMappings (mappingHash, mappings = []) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
-    const list = lodash.get(mappingList, 'apimaps', mappingList);
+    const apiPath = mappingList['apiPath'];
+    let list = lodash.get(mappingList, ['apimaps'], mappingList);
     if (lodash.isArray(list)) {
+      if (lodash.isString(apiPath) && !lodash.isEmpty(apiPath)) {
+        list = lodash.map(list, function(item) {
+          if (lodash.isString(item.path)) {
+            item.path = path.join(apiPath, item.path);
+          }
+          if (lodash.isArray(item.path)) {
+            item.path = lodash.map(item.path, function(subpath) {
+              return path.join(apiPath, subpath);
+            });
+          }
+          return item;
+        });
+      }
       mappings.push.apply(mappings, list);
     }
   });
@@ -310,6 +325,7 @@ function upgradeMapping(mapping = {}) {
     }
   }
   mapping.error.mutate = mapping.error.mutate || {};
+  // return the mapping
   return mapping;
 }
 
