@@ -25,7 +25,7 @@ function Handler(params = {}) {
     mappingHash = loadMappings(pluginCfg.mappingStore);
   }
 
-  const mappings = joinMappings(mappingHash);
+  const mappings = joinMappings(sanitizeMappings(mappingHash));
 
   const serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
 
@@ -270,6 +270,16 @@ function loadMappings (mappingStore) {
 }
 
 function joinMappings (mappingHash, mappings = []) {
+  lodash.forOwn(mappingHash, function(mappingBundle, name) {
+    const list = mappingBundle.apiMaps;
+    if (lodash.isArray(list)) {
+      mappings.push.apply(mappings, list);
+    }
+  });
+  return mappings;
+}
+
+function sanitizeMappings (mappingHash, newMappings = {}) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
     const apiPath = mappingList['apiPath'];
     let list = lodash.get(mappingList, ['apimaps'], mappingList);
@@ -287,10 +297,10 @@ function joinMappings (mappingHash, mappings = []) {
           return item;
         });
       }
-      mappings.push.apply(mappings, list);
     }
+    newMappings[name] = { apiMaps: upgradeMappings(list) };
   });
-  return upgradeMappings(mappings);
+  return newMappings;
 }
 
 function upgradeMappings(mappings = []) {
