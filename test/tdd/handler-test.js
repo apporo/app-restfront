@@ -117,4 +117,21 @@ describe('handler', function() {
       });
     });
   });
+
+  describe('mutateRenameFields()', function() {
+    var Handler, mutateRenameFields;
+
+    beforeEach(function() {
+      Handler = dtk.acquire('handler');
+      mutateRenameFields = dtk.get(Handler, 'mutateRenameFields');
+    });
+
+    it('do nothing if nameMappings is undefined', function() {
+      var original = { abc: 1024, xyz: 'Hello world' };
+      var output = mutateRenameFields(original, null);
+      assert.deepEqual(output, original);
+    });
+
+    it('change the field names based on the namingMappings properly');
+  });
 });

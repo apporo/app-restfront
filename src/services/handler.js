@@ -341,18 +341,18 @@ function upgradeMapping(mapping = {}) {
   return mapping;
 }
 
-function mutateRenameFields (payload, nameMappings) {
+function mutateRenameFields (obj, nameMappings) {
   if (nameMappings && lodash.isObject(nameMappings)) {
     for (const oldName in nameMappings) {
-      const val = lodash.get(payload, oldName);
+      const val = lodash.get(obj, oldName);
       if (!lodash.isUndefined(val)) {
         const newName = nameMappings[oldName];
-        lodash.unset(payload, oldName);
-        lodash.set(payload, newName, val);
+        lodash.unset(obj, oldName);
+        lodash.set(obj, newName, val);
       }
     }
   }
-  return payload;
+  return obj;
 }
 
 function transformError (err, req) {
