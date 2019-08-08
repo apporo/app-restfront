@@ -21,6 +21,12 @@ describe('handler', function() {
       sanitizeMappings = dtk.get(Handler, 'sanitizeMappings');
     });
 
+    it('push the sanitized mappings into the provided collections', function() {
+      var predefinedMappings = {};
+      var output = sanitizeMappings({}, predefinedMappings);
+      assert.isTrue(output === predefinedMappings);
+    });
+
     it('transform the apimaps to apiMaps and append the apiPath', function() {
       assert.isFunction(sanitizeMappings);
       var mappingHash = {
