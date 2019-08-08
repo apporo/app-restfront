@@ -11,6 +11,8 @@ const path = require('path');
 const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
 
+const HTTP_HEADER_RETURN_CODE = 'X-Return-Code';
+
 function Handler(params = {}) {
   const { loggingFactory, sandboxRegistry, tracelogService, mappingLoader } = params;
   const L = loggingFactory.getLogger();
@@ -133,25 +135,35 @@ function Handler(params = {}) {
         });
 
         promize = promize.then(function (result) {
-          let packet = { body: result };
+          let packet;
           if (mapping.output && lodash.isFunction(mapping.output.transform)) {
             packet = mapping.output.transform(result, req, reqOpts);
             if (lodash.isEmpty(packet) || !("body" in packet)) {
               packet = { body: packet };
             }
+          } else {
+            packet = { body: result };
           }
+          packet.headers = packet.headers || {};
+          packet.headers[HTTP_HEADER_RETURN_CODE] = packet.headers[HTTP_HEADER_RETURN_CODE] || 0;
+          // rename the fields
           if (mapping.output.mutate.rename) {
             packet = mutateRenameFields(packet, mapping.output.mutate.rename);
           }
           L.has('trace') && L.log('trace', reqTR.add({ result, packet }).toMessage({
             text: 'Req[${requestId}] is completed'
           }));
+          // Render the packet
           if (lodash.isObject(packet.headers)) {
             lodash.forOwn(packet.headers, function (value, key) {
               res.set(key, value);
             });
           }
-          res.json(packet.body);
+          if (lodash.isString(packet.body)) {
+            res.text(packet.body);
+          } else {
+            res.json(packet.body);
+          }
         });
 
         promize = promize.catch(Promise.TimeoutError, function(err) {
@@ -177,6 +189,7 @@ function Handler(params = {}) {
 
         promize = promize.catch(function (failed) {
           let packet = {};
+          // transform error object to packet
           if (mapping.error && lodash.isFunction(mapping.error.transform)) {
             packet = mapping.error.transform(failed, req, reqOpts);
             packet = packet || {};
@@ -185,9 +198,9 @@ function Handler(params = {}) {
             }
           } else {
             if (failed instanceof Error) {
-              packet = transformError(failed);
+              packet = transformErrorDefault(failed);
               if (chores.isDevelopmentMode()) {
-                packet.body.stack = lodash.split(failed.stack);
+                packet.body.stack = lodash.split(failed.stack, "\n");
               }
             } else {
               if (failed == null) {
@@ -215,9 +228,11 @@ function Handler(params = {}) {
               }
             }
           }
+          // rename the fields
           if (mapping.error.mutate.rename) {
             packet = mutateRenameFields(packet, mapping.error.mutate.rename);
           }
+          // Render the packet
           packet.statusCode = packet.statusCode || 500;
           if (lodash.isObject(packet.headers)) {
             lodash.forOwn(packet.headers, function (value, key) {
@@ -355,7 +370,16 @@ function mutateRenameFields (obj, nameMappings) {
   return obj;
 }
 
-function transformError (err, req) {
+function transformOutputDefault (data, req) {
+  const output = {
+    headers: {},
+    body: data
+  };
+  output.headers[HTTP_HEADER_RETURN_CODE] = 0;
+  return output;
+}
+
+function transformErrorDefault (err, req) {
   const output = {
     statusCode: err.statusCode || 500,
     headers: {},
@@ -365,7 +389,7 @@ function transformError (err, req) {
     }
   };
   if (err.returnCode) {
-    output.headers['X-Return-Code'] = err.returnCode;
+    output.headers[HTTP_HEADER_RETURN_CODE] = err.returnCode;
   }
   if (lodash.isObject(err.payload)) {
     output.body.payload = err.payload;
