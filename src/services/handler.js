@@ -74,10 +74,8 @@ function Handler(params = {}) {
       router.all(mapping.path, function (req, res, next) {
         if (req.method !== mapping.method) return next();
         const requestId = tracelogService.getRequestId(req);
-        const segmentId = req.get(pluginCfg.segmentIdHeaderName);
         const reqTR = T.branch({ key: 'requestId', value: requestId });
         L.has('info') && L.log('info', reqTR.add({
-          segmentId: segmentId,
           mapPath: mapping.path,
           mapMethod: mapping.method,
           url: req.url,
@@ -90,31 +88,15 @@ function Handler(params = {}) {
         const refMethod = ref && ref.method;
         if (!lodash.isFunction(refMethod)) return next();
 
-        let userAgent;
-        if (pluginCfg.userAgentEnabled) {
-          userAgent = uaParser(req.get('user-agent'));
-        }
-
-        const clientType = req.get(pluginCfg.clientTypeHeaderName);
-        const clientVersion = req.get(pluginCfg.clientVersionHeaderName);
-        const languageCode = req.get(pluginCfg.languageCodeHeaderName);
-        const systemPhase = req.get(pluginCfg.systemPhaseHeaderName);
-
-        const mockSuite = req.get(pluginCfg.mockSuiteHeaderName);
-        const mockState = req.get(pluginCfg.mockStateHeaderName);
-
-        const timeout = mapping.timeout || pluginCfg.requestTimeout;
-
-        const reqOpts = {
-          segmentId, requestId, timeout,
-          clientType, clientVersion, languageCode, systemPhase,
-          mockSuite, mockState, userAgent
-        };
+        const reqOpts = extractReqOpts(req, pluginCfg, {
+          requestId,
+          timeout: mapping.timeout || pluginCfg.requestTimeout
+        });
 
         let promize = Promise.resolve();
 
-        if (timeout && timeout > 0) {
-          promize = promize.timeout(timeout);
+        if (reqOpts.timeout && reqOpts.timeout > 0) {
+          promize = promize.timeout(reqOpts.timeout);
         }
 
         promize = promize.then(function () {
@@ -395,4 +377,27 @@ function transformErrorDefault (err, req) {
     output.body.payload = err.payload;
   }
   return output;
+}
+
+function extractReqOpts (req, pluginCfg, ext = {}) {
+  const opts = {};
+
+  opts.segmentId = req.get(pluginCfg.segmentIdHeaderName);
+  opts.clientType = req.get(pluginCfg.clientTypeHeaderName);
+  opts.clientVersion = req.get(pluginCfg.clientVersionHeaderName);
+  opts.languageCode = req.get(pluginCfg.languageCodeHeaderName);
+  opts.systemPhase = req.get(pluginCfg.systemPhaseHeaderName);
+
+  opts.mockSuite = req.get(pluginCfg.mockSuiteHeaderName);
+  opts.mockState = req.get(pluginCfg.mockStateHeaderName);
+
+  if (pluginCfg.userAgentEnabled) {
+    opts.userAgent = uaParser(req.get('user-agent'));
+  }
+
+  for (const key in ext) {
+    opts[key] = ext[key];
+  }
+
+  return opts;
 }
