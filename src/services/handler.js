@@ -12,15 +12,15 @@ const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
 
 function Handler(params = {}) {
-  const L = params.loggingFactory.getLogger();
-  const T = params.loggingFactory.getTracer();
-  const { sandboxRegistry, tracelogService } = params;
+  const { loggingFactory, sandboxRegistry, tracelogService, mappingLoader } = params;
+  const L = loggingFactory.getLogger();
+  const T = loggingFactory.getTracer();
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
 
   let mappingHash;
   if (BUILTIN_MAPPING_LOADER) {
-    mappingHash = params.mappingLoader.loadMappings(pluginCfg.mappingStore);
+    mappingHash = mappingLoader.loadMappings(pluginCfg.mappingStore);
   } else {
     mappingHash = loadMappings(pluginCfg.mappingStore);
   }
@@ -184,34 +184,36 @@ function Handler(params = {}) {
               message: "mapping.error.transform() output don't have body field"
             }
           } else {
-            if (failed == null) {
-              packet.body = {
-                message: 'Error is null'
-              }
-            } else if (failed instanceof Error) {
-              packet.body = {
-                code: failed.code,
-                message: failed.message,
-              }
+            if (failed instanceof Error) {
+              packet = transformError(failed);
               if (chores.isDevelopmentMode()) {
-                packet.body = failed.stack;
-              }
-            } else if (lodash.isString(failed)) {
-              packet.body = {
-                message: failed
-              }
-            } else if (lodash.isObject(failed)) {
-              packet.body = {
-                message: 'Error: ' + JSON.stringify(failed),
-                data: failed
+                packet.body.stack = lodash.split(failed.stack);
               }
             } else {
-              packet.body = {
-                message: 'Error: ' + failed,
-                data: failed
+              if (failed == null) {
+                packet.body = {
+                  type: 'null',
+                  message: 'Error is null'
+                }
+              } else if (lodash.isString(failed)) {
+                packet.body = {
+                  type: 'string',
+                  message: failed
+                }
+              } else if (lodash.isObject(failed)) {
+                packet.body = {
+                  type: 'object',
+                  message: 'Error: ' + JSON.stringify(failed),
+                  data: failed
+                }
+              } else {
+                packet.body = {
+                  type: (typeof failed),
+                  message: 'Error: ' + failed,
+                  data: failed
+                }
               }
             }
-            packet.body.type = (typeof failed);
           }
           if (mapping.error.mutate.rename) {
             packet = mutateRenameFields(packet, mapping.error.mutate.rename);
@@ -223,7 +225,7 @@ function Handler(params = {}) {
             });
           }
           L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] has failed, status[${statusCode}], body: ${body}'
+            text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
           }));
           if (lodash.isString(packet.body)) {
             res.status(packet.statusCode).text(packet.body);
@@ -351,4 +353,22 @@ function mutateRenameFields (payload, nameMappings) {
     }
   }
   return payload;
+}
+
+function transformError (err, req) {
+  const output = {
+    statusCode: err.statusCode || 500,
+    headers: {},
+    body: {
+      name: err.name,
+      message: err.message
+    }
+  };
+  if (err.returnCode) {
+    output.headers['X-Return-Code'] = err.returnCode;
+  }
+  if (lodash.isObject(err.payload)) {
+    output.body.payload = err.payload;
+  }
+  return output;
 }

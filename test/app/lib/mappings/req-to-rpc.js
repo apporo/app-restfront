@@ -17,11 +17,6 @@ var mappings = {
       },
       serviceName: 'application/example',
       methodName: 'fibonacci',
-      error: {
-        transform: function(err, req) {
-          return err;
-        },
-      },
       output: {
         transform: function(result, req) {
           return result;
