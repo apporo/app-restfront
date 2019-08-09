@@ -14,11 +14,14 @@ const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
 const HTTP_HEADER_RETURN_CODE = 'X-Return-Code';
 
 function Handler(params = {}) {
-  const { loggingFactory, sandboxRegistry, tracelogService, mappingLoader } = params;
+  const { loggingFactory, sandboxRegistry, tracelogService, mappingLoader, swaggerBuilder } = params;
   const L = loggingFactory.getLogger();
   const T = loggingFactory.getTracer();
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
+
+  // const swaggerBuilder = sandboxRegistry.lookupService('app-apispec/swaggerBuilder') ||
+  //     sandboxRegistry.lookupService('app-restguide/swaggerBuilder');
 
   let mappingHash;
   if (BUILTIN_MAPPING_LOADER) {
@@ -27,7 +30,21 @@ function Handler(params = {}) {
     mappingHash = loadMappings(pluginCfg.mappingStore);
   }
 
-  const mappings = joinMappings(sanitizeMappings(mappingHash));
+  mappingHash = sanitizeMappings(mappingHash);
+
+  const mappings = joinMappings(mappingHash);
+
+  if (swaggerBuilder) {
+    swaggerBuilder.setApiLayout(require(path.join(__dirname, '../../data/swagger.json')));
+    // swaggerBuilder.addApiEntries(require(path.join(__dirname, '../../data/api1.json')));
+    // swaggerBuilder.addApiEntries(require(path.join(__dirname, '../../data/api2.json')));
+    lodash.forOwn(mappingHash, function(mappingBundle, name) {
+      if (mappingBundle.apiDocs) {
+        console.log(JSON.stringify(mappingBundle.apiDocs));
+        swaggerBuilder.addApiEntries(mappingBundle.apiDocs);
+      }
+    });
+  }
 
   const serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
 
@@ -245,6 +262,7 @@ function Handler(params = {}) {
 Handler.referenceHash = {
   "sandboxRegistry": "devebot/sandboxRegistry",
   "tracelogService": "app-tracelog/tracelogService",
+  "swaggerBuilder": 'app-apispec/swaggerBuilder'
 };
 
 if (BUILTIN_MAPPING_LOADER) {
@@ -300,7 +318,10 @@ function sanitizeMappings (mappingHash, newMappings = {}) {
     }
     newMappings[name] = { apiMaps: upgradeMappings(list) };
     // prefix the paths of swagger entries by apiPath
-
+    let swagger = mappingList.apiDocs || mappingList.swagger;
+    if (swagger != null && lodash.isObject(swagger)) {
+    }
+    newMappings[name].apiDocs = swagger;
   });
   return newMappings;
 }

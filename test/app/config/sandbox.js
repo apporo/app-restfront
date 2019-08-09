@@ -17,6 +17,11 @@ module.exports = {
         'assets': path.join(__dirname, '../public/assets')
       }
     },
+    appApispec: {
+      contextPath: contextPath,
+      specificationFile: path.join(__dirname, '../../../data/swagger.json'),
+      uiType: 'swagger-ui-express', // 'swagger-tools'
+    },
     appTracelog: {
       tracingPaths: [ path.join(contextPath, apiPath) ],
       tracingBoundaryEnabled: true

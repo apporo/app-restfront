@@ -54,6 +54,7 @@ describe('handler', function() {
       var mappingRefs = sanitizeMappings(mappingHash);
       assert.deepEqual(mappingRefs, {
         "example1": {
+          "apiDocs": undefined,
           "apiMaps": [
             {
               "path": "/:apiVersion/action1",
@@ -85,6 +86,7 @@ describe('handler', function() {
           ]
         },
         "example2": {
+          "apiDocs": undefined,
           "apiMaps": [
             {
               "path": "/example2/:apiVersion/action1",
