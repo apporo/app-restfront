@@ -4,6 +4,7 @@ var devebot = require('devebot');
 var lodash = devebot.require('lodash');
 var assert = require('liberica').assert;
 var dtk = require('liberica').mockit;
+var path = require('path');
 
 describe('handler', function() {
   describe('sanitizeMappings()', function() {
@@ -133,5 +134,52 @@ describe('handler', function() {
     });
 
     it('change the field names based on the namingMappings properly');
+  });
+
+  describe('extractReqOpts()', function() {
+    var Handler, extractReqOpts;
+
+    var app = require(path.join(__dirname, '../app'));
+    var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
+
+    var req = new function() {
+      var reqHeaders = {
+        'X-Request-Id': '52160bbb-cac5-405f-a1e9-a55323b17938',
+        'X-App-Type': 'agent',
+        'X-App-Version': '0.1.0'
+      };
+      this.get = function(name) {
+        return reqHeaders[name];
+      }
+    }();
+
+    beforeEach(function() {
+      Handler = dtk.acquire('handler');
+      extractReqOpts = dtk.get(Handler, 'extractReqOpts');
+    });
+
+    it('extract the predefined headers properly', function() {
+      var output = extractReqOpts(req, sandboxConfig);
+      var expected = {
+        "requestId": "52160bbb-cac5-405f-a1e9-a55323b17938",
+        "clientType": "agent",
+        "clientVersion": "0.1.0"
+      };
+      assert.deepInclude(output, expected);
+    });
+
+    it('the headers will be overridden by extensions', function() {
+      var output = extractReqOpts(req, sandboxConfig, {
+        requestId: "7f36af79-077b-448e-9c66-fc177996fd10",
+        timeout: 1000
+      });
+      var expected = {
+        "requestId": "7f36af79-077b-448e-9c66-fc177996fd10",
+        "clientType": "agent",
+        "clientVersion": "0.1.0",
+        "timeout": 1000
+      };
+      assert.deepInclude(output, expected);
+    });
   });
 });

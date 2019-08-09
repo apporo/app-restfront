@@ -281,6 +281,7 @@ function joinMappings (mappingHash, mappings = []) {
 function sanitizeMappings (mappingHash, newMappings = {}) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
     const apiPath = mappingList['apiPath'];
+    // prefix the paths of middlewares by apiPath
     let list = lodash.get(mappingList, ['apimaps'], mappingList);
     if (lodash.isArray(list)) {
       if (lodash.isString(apiPath) && !lodash.isEmpty(apiPath)) {
@@ -298,6 +299,8 @@ function sanitizeMappings (mappingHash, newMappings = {}) {
       }
     }
     newMappings[name] = { apiMaps: upgradeMappings(list) };
+    // prefix the paths of swagger entries by apiPath
+
   });
   return newMappings;
 }
@@ -382,6 +385,7 @@ function transformErrorDefault (err, req) {
 function extractReqOpts (req, pluginCfg, ext = {}) {
   const opts = {};
 
+  opts.requestId = req.get(pluginCfg.requestIdHeaderName);
   opts.segmentId = req.get(pluginCfg.segmentIdHeaderName);
   opts.clientType = req.get(pluginCfg.clientTypeHeaderName);
   opts.clientVersion = req.get(pluginCfg.clientVersionHeaderName);
