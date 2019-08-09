@@ -1,0 +1,15 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Restfront API",
+    "description": "Nothing you think is real is real",
+    "version": "1.0.0"
+  },
+  "schemes": [
+    "https",
+    "http"
+  ],
+  "produces": [
+    "application/json"
+  ]
+}

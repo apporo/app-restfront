@@ -9,6 +9,7 @@ var app = require('devebot').launchApplication({
     name: 'app-restfront',
     path: path.join(__dirname, '../../index.js')
   },
+  'app-apispec',
 ]);
 
 if (require.main === module) app.server.start();

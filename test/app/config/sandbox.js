@@ -19,7 +19,8 @@ module.exports = {
     },
     appApispec: {
       contextPath: contextPath,
-      specificationFile: path.join(__dirname, '../../../data/swagger.json'),
+      defaultApiDocs: path.join(__dirname, '../data/api-docs/swagger.json'),
+      specificationFile: path.join(__dirname, '../data/api-docs/swagger.json'),
       uiType: 'swagger-ui-express', // 'swagger-tools'
     },
     appTracelog: {
