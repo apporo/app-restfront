@@ -166,6 +166,16 @@ describe('handler', function() {
         "clientVersion": "0.1.0"
       };
       assert.deepInclude(output, expected);
+      assert.sameMembers(lodash.keys(output), [
+        "requestId",
+        "segmentId",
+        "clientType",
+        "clientVersion",
+        "languageCode",
+        "systemPhase",
+        "mockSuite",
+        "mockState",
+      ]);
     });
 
     it('the headers will be overridden by extensions', function() {
@@ -180,6 +190,17 @@ describe('handler', function() {
         "timeout": 1000
       };
       assert.deepInclude(output, expected);
+      assert.sameMembers(lodash.keys(output), [
+        "requestId",
+        "segmentId",
+        "clientType",
+        "clientVersion",
+        "languageCode",
+        "systemPhase",
+        "mockSuite",
+        "mockState",
+        "timeout",
+      ]);
     });
   });
 });
