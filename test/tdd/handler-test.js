@@ -119,6 +119,50 @@ describe('handler', function() {
         }
       });
     });
+
+    it('append the apiPath to the keys of [paths] in apiDocs', function() {
+      assert.isFunction(sanitizeMappings);
+      var mappingHash = {
+        example3: {
+          apiPath: '/example3',
+          apiDocs: {
+            "swagger": "2.0",
+            "host": "api.example.com",
+            "basePath": "/v1",
+            "produces": [
+              "application/json"
+            ],
+            "paths": {
+              "/me": {
+                "get": {
+                  "summary": "User Profile",
+                }
+              }
+            }
+          }
+        }
+      }
+      var mappingRefs = sanitizeMappings(mappingHash);
+      assert.deepEqual(mappingRefs, {
+        "example3": {
+          "apiDocs": {
+            "swagger": "2.0",
+            "host": "api.example.com",
+            "basePath": "/v1",
+            "produces": [
+              "application/json"
+            ],
+            "paths": {
+              "/example3/me": {
+                "get": {
+                  "summary": "User Profile",
+                }
+              }
+            }
+          }
+        }
+      });
+    });
   });
 
   describe('mutateRenameFields()', function() {

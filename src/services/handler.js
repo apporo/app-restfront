@@ -171,13 +171,16 @@ function Handler(params = {}) {
             packet = mutateRenameFields(packet, mapping.error.mutate.rename);
           }
           packet.statusCode = packet.statusCode || 408;
+          // render the packet to the response
           if (lodash.isObject(packet.headers)) {
             lodash.forOwn(packet.headers, function (value, key) {
               res.set(key, value);
             });
           }
-          L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] has timeout'
+          L.has('error') && L.log('error', reqTR.add({
+            timeout: reqOpts.timeout
+          }).toMessage({
+            text: 'Req[${requestId}] has timeout after ${timeout} seconds'
           }));
           res.status(packet.statusCode).end();
         });
@@ -294,8 +297,9 @@ function joinMappings (mappingHash, mappings = []) {
 function sanitizeMappings (mappingHash, newMappings = {}) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
     const apiPath = mappingList['apiPath'];
+    newMappings[name] = newMappings[name] || {};
     // prefix the paths of middlewares by apiPath
-    let list = lodash.get(mappingList, ['apimaps'], mappingList);
+    let list = mappingList.apiMaps || mappingList.apimaps || mappingList;
     if (lodash.isArray(list)) {
       if (lodash.isString(apiPath) && !lodash.isEmpty(apiPath)) {
         list = lodash.map(list, function(item) {
@@ -310,11 +314,16 @@ function sanitizeMappings (mappingHash, newMappings = {}) {
           return item;
         });
       }
+      newMappings[name].apiMaps = upgradeMappings(list);
     }
-    newMappings[name] = { apiMaps: upgradeMappings(list) };
     // prefix the paths of swagger entries by apiPath
     let swagger = mappingList.apiDocs || mappingList.swagger;
-    if (swagger != null && lodash.isObject(swagger)) {
+    if (swagger && swagger.paths && lodash.isObject(swagger.paths)) {
+      if (lodash.isString(apiPath) && !lodash.isEmpty(apiPath)) {
+        swagger.paths = lodash.mapKeys(swagger.paths, function(obj, key) {
+          return path.join(apiPath, key);
+        })
+      }
     }
     newMappings[name].apiDocs = swagger;
   });
