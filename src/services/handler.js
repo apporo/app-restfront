@@ -166,27 +166,17 @@ function Handler(params = {}) {
         });
 
         promize = promize.catch(Promise.TimeoutError, function(err) {
-          let packet = {};
-          if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(err, req, reqOpts);
-            packet = packet || {};
-          }
-          if (mapping.error.mutate.rename) {
-            packet = mutateRenameFields(packet, mapping.error.mutate.rename);
-          }
-          packet.statusCode = packet.statusCode || 408;
-          // render the packet to the response
-          if (lodash.isObject(packet.headers)) {
-            lodash.forOwn(packet.headers, function (value, key) {
-              res.set(key, value);
-            });
-          }
           L.has('error') && L.log('error', reqTR.add({
             timeout: reqOpts.timeout
           }).toMessage({
             text: 'Req[${requestId}] has timeout after ${timeout} seconds'
           }));
-          res.status(packet.statusCode).end();
+          return Promise.reject(errorBuilder.newError('RequestTimeoutError', {
+            payload: {
+              timeout: reqOpts.timeout
+            },
+            language: reqOpts.languageCode
+          }));
         });
 
         promize = promize.catch(function (failed) {
