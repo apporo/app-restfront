@@ -20,9 +20,6 @@ function Handler(params = {}) {
   const packageName = params.packageName || 'app-restfront';
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
 
-  const swaggerBuilder = sandboxRegistry.lookupService('app-apispec/swaggerBuilder') ||
-      sandboxRegistry.lookupService('app-restguide/swaggerBuilder');
-
   let mappingHash;
   if (BUILTIN_MAPPING_LOADER) {
     mappingHash = mappingLoader.loadMappings(pluginCfg.mappingStore);
@@ -33,6 +30,9 @@ function Handler(params = {}) {
   mappingHash = sanitizeMappings(mappingHash);
 
   const mappings = joinMappings(mappingHash);
+
+  const swaggerBuilder = sandboxRegistry.lookupService('app-apispec/swaggerBuilder') ||
+      sandboxRegistry.lookupService('app-restguide/swaggerBuilder');
 
   if (swaggerBuilder) {
     lodash.forOwn(mappingHash, function(mappingBundle, name) {
@@ -49,9 +49,7 @@ function Handler(params = {}) {
     errorCodes: pluginCfg.errorCodes
   });
 
-  this.lookupMethod = function(serviceName, methodName) {
-    return serviceSelector.lookupMethod(serviceName, methodName);
-  }
+  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg };
 
   this.validator = function (express) {
     const router = express.Router();
@@ -86,157 +84,9 @@ function Handler(params = {}) {
   }
 
   this.buildRestRouter = function (express) {
-    const self = this;
     const router = express.Router();
     lodash.forEach(mappings, function (mapping) {
-      router.all(mapping.path, function (req, res, next) {
-        if (req.method !== mapping.method) return next();
-        const requestId = tracelogService.getRequestId(req);
-        const reqTR = T.branch({ key: 'requestId', value: requestId });
-        L.has('info') && L.log('info', reqTR.add({
-          mapPath: mapping.path,
-          mapMethod: mapping.method,
-          url: req.url,
-          method: req.method
-        }).toMessage({
-          text: 'Req[${requestId}] from [${method}]${url}'
-        }, 'direct'));
-
-        const ref = self.lookupMethod(mapping.serviceName, mapping.methodName);
-        const refMethod = ref && ref.method;
-        if (!lodash.isFunction(refMethod)) return next();
-
-        let promize = Promise.resolve();
-
-        const timeout = mapping.timeout || pluginCfg.requestTimeout;
-        if (timeout && timeout > 0) {
-          promize = promize.timeout(timeout);
-        }
-
-        const failedReqOpts = [];
-        const reqOpts = extractReqOpts(req, pluginCfg, { requestId, timeout }, failedReqOpts);
-
-        if (failedReqOpts.length > 0) {
-          promize = Promise.reject(errorBuilder.newError('RequestOptionNotFound', {
-            payload: {
-              requestOptions: failedReqOpts
-            },
-            language: reqOpts.languageCode
-          }));
-        }
-
-        promize = promize.then(function () {
-          if (mapping.input && mapping.input.transform) {
-            return mapping.input.transform(req, reqOpts);
-          }
-          return req.body;
-        });
-
-        if (mapping.input.mutate.rename) {
-          promize = promize.then(function (reqData) {
-            return mutateRenameFields(reqData, mapping.input.mutate.rename);
-          })
-        }
-
-        promize = promize.then(function (reqData) {
-          return refMethod(reqData, reqOpts);
-        });
-
-        promize = promize.then(function (result) {
-          let packet;
-          if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-            packet = mapping.output.transform(result, req, reqOpts);
-            if (lodash.isEmpty(packet) || !("body" in packet)) {
-              packet = { body: packet };
-            }
-          } else {
-            packet = { body: result };
-          }
-          packet.headers = packet.headers || {};
-          packet.headers[HTTP_HEADER_RETURN_CODE] = packet.headers[HTTP_HEADER_RETURN_CODE] || 0;
-          // rename the fields
-          if (mapping.output.mutate.rename) {
-            packet = mutateRenameFields(packet, mapping.output.mutate.rename);
-          }
-          // Render the packet
-          renderPacketToResponse(packet, res);
-          L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] is completed'
-          }));
-        });
-
-        promize = promize.catch(Promise.TimeoutError, function(err) {
-          L.has('error') && L.log('error', reqTR.add({
-            timeout: reqOpts.timeout
-          }).toMessage({
-            text: 'Req[${requestId}] has timeout after ${timeout} seconds'
-          }));
-          return Promise.reject(errorBuilder.newError('RequestTimeoutError', {
-            payload: {
-              timeout: reqOpts.timeout
-            },
-            language: reqOpts.languageCode
-          }));
-        });
-
-        promize = promize.catch(function (failed) {
-          let packet = {};
-          // transform error object to packet
-          if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-            packet = mapping.error.transform(failed, req, reqOpts);
-            packet = packet || {};
-            packet.body = packet.body || {
-              message: "mapping.error.transform() output don't have body field"
-            }
-          } else {
-            if (failed instanceof Error) {
-              packet = transformErrorDefault(failed);
-              if (chores.isDevelopmentMode()) {
-                packet.body.stack = lodash.split(failed.stack, "\n");
-              }
-            } else {
-              if (failed == null) {
-                packet.body = {
-                  type: 'null',
-                  message: 'Error is null'
-                }
-              } else if (lodash.isString(failed)) {
-                packet.body = {
-                  type: 'string',
-                  message: failed
-                }
-              } else if (lodash.isObject(failed)) {
-                packet.body = {
-                  type: 'object',
-                  message: 'Error: ' + JSON.stringify(failed),
-                  data: failed
-                }
-              } else {
-                packet.body = {
-                  type: (typeof failed),
-                  message: 'Error: ' + failed,
-                  data: failed
-                }
-              }
-            }
-          }
-          // rename the fields
-          if (mapping.error.mutate.rename) {
-            packet = mutateRenameFields(packet, mapping.error.mutate.rename);
-          }
-          // Render the packet
-          renderPacketToResponse(packet, res.status(packet.statusCode || 500));
-          L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
-          }));
-        });
-
-        promize.finally(function () {
-          L.has('silly') && L.log('silly', reqTR.toMessage({
-            text: 'Req[${requestId}] end'
-          }));
-        });
-      });
+      router.all(mapping.path, buildMiddlewareFromMapping(CTX, mapping));
     });
     return router;
   };
@@ -349,6 +199,158 @@ function upgradeMapping(mapping = {}) {
   mapping.error.mutate = mapping.error.mutate || {};
   // return the mapping
   return mapping;
+}
+
+function buildMiddlewareFromMapping(context, mapping) {
+  const { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg } = context;
+  return function (req, res, next) {
+    if (req.method !== mapping.method) return next();
+    const requestId = tracelogService.getRequestId(req);
+    const reqTR = T.branch({ key: 'requestId', value: requestId });
+    L.has('info') && L.log('info', reqTR.add({
+      mapPath: mapping.path,
+      mapMethod: mapping.method,
+      url: req.url,
+      method: req.method
+    }).toMessage({
+      text: 'Req[${requestId}] from [${method}]${url}'
+    }, 'direct'));
+
+    const ref = serviceSelector.lookupMethod(mapping.serviceName, mapping.methodName);
+    const refMethod = ref && ref.method;
+    if (!lodash.isFunction(refMethod)) return next();
+
+    let promize = Promise.resolve();
+
+    const timeout = mapping.timeout || pluginCfg.requestTimeout;
+    if (timeout && timeout > 0) {
+      promize = promize.timeout(timeout);
+    }
+
+    const failedReqOpts = [];
+    const reqOpts = extractReqOpts(req, pluginCfg, { requestId, timeout }, failedReqOpts);
+
+    if (failedReqOpts.length > 0) {
+      promize = Promise.reject(errorBuilder.newError('RequestOptionNotFound', {
+        payload: {
+          requestOptions: failedReqOpts
+        },
+        language: reqOpts.languageCode
+      }));
+    }
+
+    promize = promize.then(function () {
+      if (mapping.input && mapping.input.transform) {
+        return mapping.input.transform(req, reqOpts);
+      }
+      return req.body;
+    });
+
+    if (mapping.input.mutate.rename) {
+      promize = promize.then(function (reqData) {
+        return mutateRenameFields(reqData, mapping.input.mutate.rename);
+      })
+    }
+
+    promize = promize.then(function (reqData) {
+      return refMethod(reqData, reqOpts);
+    });
+
+    promize = promize.then(function (result) {
+      let packet;
+      if (mapping.output && lodash.isFunction(mapping.output.transform)) {
+        packet = mapping.output.transform(result, req, reqOpts);
+        if (lodash.isEmpty(packet) || !("body" in packet)) {
+          packet = { body: packet };
+        }
+      } else {
+        packet = { body: result };
+      }
+      packet.headers = packet.headers || {};
+      packet.headers[HTTP_HEADER_RETURN_CODE] = packet.headers[HTTP_HEADER_RETURN_CODE] || 0;
+      // rename the fields
+      if (mapping.output.mutate.rename) {
+        packet = mutateRenameFields(packet, mapping.output.mutate.rename);
+      }
+      // Render the packet
+      renderPacketToResponse(packet, res);
+      L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
+        text: 'Req[${requestId}] is completed'
+      }));
+    });
+
+    promize = promize.catch(Promise.TimeoutError, function(err) {
+      L.has('error') && L.log('error', reqTR.add({
+        timeout: reqOpts.timeout
+      }).toMessage({
+        text: 'Req[${requestId}] has timeout after ${timeout} seconds'
+      }));
+      return Promise.reject(errorBuilder.newError('RequestTimeoutError', {
+        payload: {
+          timeout: reqOpts.timeout
+        },
+        language: reqOpts.languageCode
+      }));
+    });
+
+    promize = promize.catch(function (failed) {
+      let packet = {};
+      // transform error object to packet
+      if (mapping.error && lodash.isFunction(mapping.error.transform)) {
+        packet = mapping.error.transform(failed, req, reqOpts);
+        packet = packet || {};
+        packet.body = packet.body || {
+          message: "mapping.error.transform() output don't have body field"
+        }
+      } else {
+        if (failed instanceof Error) {
+          packet = transformErrorDefault(failed);
+          if (chores.isDevelopmentMode()) {
+            packet.body.stack = lodash.split(failed.stack, "\n");
+          }
+        } else {
+          if (failed == null) {
+            packet.body = {
+              type: 'null',
+              message: 'Error is null'
+            }
+          } else if (lodash.isString(failed)) {
+            packet.body = {
+              type: 'string',
+              message: failed
+            }
+          } else if (lodash.isObject(failed)) {
+            packet.body = {
+              type: 'object',
+              message: 'Error: ' + JSON.stringify(failed),
+              data: failed
+            }
+          } else {
+            packet.body = {
+              type: (typeof failed),
+              message: 'Error: ' + failed,
+              data: failed
+            }
+          }
+        }
+      }
+      // rename the fields
+      if (mapping.error.mutate.rename) {
+        packet = mutateRenameFields(packet, mapping.error.mutate.rename);
+      }
+      // Render the packet
+      renderPacketToResponse(packet, res.status(packet.statusCode || 500));
+      L.has('error') && L.log('error', reqTR.add(packet).toMessage({
+        text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
+      }));
+    });
+
+    promize.finally(function () {
+      L.has('silly') && L.log('silly', reqTR.toMessage({
+        text: 'Req[${requestId}] end'
+      }));
+    });
+  }
 }
 
 function mutateRenameFields (obj, nameMappings) {
