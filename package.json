@@ -9,14 +9,12 @@
     "url": "https://github.com/apporo"
   },
   "main": "index.js",
-  "directories": {
-    "lib": "lib/"
-  },
   "files": [
     "bin/",
     "config/",
     "data/",
-    "lib/"
+    "lib/",
+    "manifest.js"
   ],
   "scripts": {
     "build": "babel ./src -d ./lib",
