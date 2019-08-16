@@ -407,21 +407,32 @@ function transformErrorDefault (err, req) {
   return output;
 }
 
+const STANDARD_REQ_OPTIONS = [
+  "requestId",
+  "segmentId",
+  "platformApp",
+  "schemaVersion",
+  "clientType",
+  "clientVersion",
+  "languageCode",
+  "appTierType",
+  "appUserType",
+  "mockSuite",
+  "mockState",
+];
+
 function extractReqOpts (req, pluginCfg, ext = {}) {
   const opts = {};
 
-  opts.requestId = req.get(pluginCfg.requestIdHeaderName);
-  opts.segmentId = req.get(pluginCfg.segmentIdHeaderName);
-  opts.platformApp = req.get(pluginCfg.platformAppHeaderName);
-  opts.schemaVersion = req.get(pluginCfg.schemaVersionHeaderName);
-  opts.clientType = req.get(pluginCfg.clientTypeHeaderName);
-  opts.clientVersion = req.get(pluginCfg.clientVersionHeaderName);
-  opts.languageCode = req.get(pluginCfg.languageCodeHeaderName);
-  opts.appTierType = req.get(pluginCfg.appTierTypeHeaderName);
-  opts.appUserType = req.get(pluginCfg.appUserTypeHeaderName);
-
-  opts.mockSuite = req.get(pluginCfg.mockSuiteHeaderName);
-  opts.mockState = req.get(pluginCfg.mockStateHeaderName);
+  for (const i in STANDARD_REQ_OPTIONS) {
+    const optionName = STANDARD_REQ_OPTIONS[i];
+    const headerName = optionName + 'HeaderName';
+    let headerOpts = pluginCfg[headerName];
+    if (lodash.isString(headerOpts)) {
+      headerOpts = { name: headerOpts };
+    }
+    opts[optionName] = req.get(headerOpts.name);
+  }
 
   if (pluginCfg.userAgentEnabled) {
     opts.userAgent = uaParser(req.get('User-Agent'));

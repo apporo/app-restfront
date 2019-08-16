@@ -183,20 +183,7 @@ describe('handler', function() {
   });
 
   describe('extractReqOpts()', function() {
-    var STANDARD_REQ_HEADERS = [
-      "requestId",
-      "segmentId",
-      "platformApp",
-      "schemaVersion",
-      "clientType",
-      "clientVersion",
-      "languageCode",
-      "appTierType",
-      "appUserType",
-      "mockSuite",
-      "mockState",
-    ];
-    var Handler, extractReqOpts;
+    var Handler, STANDARD_REQ_OPTIONS, extractReqOpts;
 
     var app = require(path.join(__dirname, '../app'));
     var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
@@ -211,6 +198,7 @@ describe('handler', function() {
 
     beforeEach(function() {
       Handler = dtk.acquire('handler');
+      STANDARD_REQ_OPTIONS = dtk.get(Handler, 'STANDARD_REQ_OPTIONS');
       extractReqOpts = dtk.get(Handler, 'extractReqOpts');
     });
 
@@ -222,7 +210,7 @@ describe('handler', function() {
         "clientVersion": "0.1.0"
       };
       assert.deepInclude(output, expected);
-      assert.sameMembers(lodash.keys(output), STANDARD_REQ_HEADERS);
+      assert.sameMembers(lodash.keys(output), STANDARD_REQ_OPTIONS);
     });
 
     it('the headers will be overridden by extensions', function() {
@@ -237,7 +225,7 @@ describe('handler', function() {
         "timeout": 1000
       };
       assert.deepInclude(output, expected);
-      assert.sameMembers(lodash.keys(output), STANDARD_REQ_HEADERS.concat([ "timeout" ]));
+      assert.sameMembers(lodash.keys(output), STANDARD_REQ_OPTIONS.concat([ "timeout" ]));
     });
 
     var config = lodash.assign({ userAgentEnabled: true }, sandboxConfig);

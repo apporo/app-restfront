@@ -38,37 +38,37 @@ module.exports = {
             "additionalProperties": false
           },
           "requestIdHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "segmentIdHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "platformAppHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "schemaVersionHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "clientTypeHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "clientVersionHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "languageCodeHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "appTierTypeHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "appUserTypeHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "mockSuiteHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "mockStateHeaderName": {
-            "type": "string"
+            "$ref": "#/definitions/headerConfig"
           },
           "requestTimeout": {
             "type": "number"
@@ -80,7 +80,27 @@ module.exports = {
             "type": "number"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "definitions": {
+          "headerConfig": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
       }
     }
   }
