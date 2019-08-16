@@ -183,7 +183,20 @@ describe('handler', function() {
   });
 
   describe('extractReqOpts()', function() {
-    var Handler, STANDARD_REQ_OPTIONS, extractReqOpts;
+    var STANDARD_REQ_OPTIONS = [
+      "requestId",
+      "segmentId",
+      "platformApp",
+      "schemaVersion",
+      "clientType",
+      "clientVersion",
+      "languageCode",
+      "appTierType",
+      "appUserType",
+      "mockSuite",
+      "mockState",
+    ];
+    var Handler, extractReqOpts;
 
     var app = require(path.join(__dirname, '../app'));
     var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
@@ -192,13 +205,14 @@ describe('handler', function() {
       headers: {
         'X-Request-Id': '52160bbb-cac5-405f-a1e9-a55323b17938',
         'X-App-Type': 'agent',
-        'X-App-Version': '0.1.0'
+        'X-App-Version': '0.1.0',
+        'X-Tier-Type': 'UAT',
+        'X-User-Type': 'DEMO',
       }
     });
 
     beforeEach(function() {
       Handler = dtk.acquire('handler');
-      STANDARD_REQ_OPTIONS = dtk.get(Handler, 'STANDARD_REQ_OPTIONS');
       extractReqOpts = dtk.get(Handler, 'extractReqOpts');
     });
 
@@ -207,7 +221,9 @@ describe('handler', function() {
       var expected = {
         "requestId": "52160bbb-cac5-405f-a1e9-a55323b17938",
         "clientType": "agent",
-        "clientVersion": "0.1.0"
+        "clientVersion": "0.1.0",
+        "appTierType": "UAT",
+        "appUserType": "DEMO",
       };
       assert.deepInclude(output, expected);
       assert.sameMembers(lodash.keys(output), STANDARD_REQ_OPTIONS);
@@ -222,6 +238,8 @@ describe('handler', function() {
         "requestId": "7f36af79-077b-448e-9c66-fc177996fd10",
         "clientType": "agent",
         "clientVersion": "0.1.0",
+        "appTierType": "UAT",
+        "appUserType": "DEMO",
         "timeout": 1000
       };
       assert.deepInclude(output, expected);

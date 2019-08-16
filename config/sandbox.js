@@ -1,40 +1,42 @@
 module.exports = {
   plugins: {
     appRestfront: {
-      requestIdHeaderName: {
-        headerName: 'X-Request-Id',
-        required: true,
-      },
-      segmentIdHeaderName: {
-        headerName: 'X-Segment-Id',
-      },
-      platformAppHeaderName: {
-        headerName: 'X-Platform-App',
-      },
-      schemaVersionHeaderName: {
-        headerName: 'X-Schema-Version',
-        required: true,
-      },
-      clientTypeHeaderName: {
-        headerName: 'X-App-Type',
-      },
-      clientVersionHeaderName: {
-        headerName: 'X-App-Version',
-      },
-      languageCodeHeaderName: {
-        headerName: 'X-Lang-Code',
-      },
-      appTierTypeHeaderName: {
-        headerName: 'X-Tier-Type',
-      },
-      appUserTypeHeaderName: {
-        headerName: 'X-User-Type',
-      },
-      mockSuiteHeaderName: {
-        headerName: 'X-Mock-Suite',
-      },
-      mockStateHeaderName: {
-        headerName: 'X-Mock-State',
+      requestOptions: {
+        requestId: {
+          headerName: 'X-Request-Id',
+          optionName: 'requestId',
+          required: true,
+        },
+        segmentId: {
+          headerName: 'X-Segment-Id',
+        },
+        platformApp: {
+          headerName: 'X-Platform-App',
+        },
+        schemaVersion: {
+          headerName: 'X-Schema-Version',
+        },
+        clientType: {
+          headerName: 'X-App-Type',
+        },
+        clientVersion: {
+          headerName: 'X-App-Version',
+        },
+        languageCode: {
+          headerName: 'X-Lang-Code',
+        },
+        appTierType: {
+          headerName: 'X-Tier-Type',
+        },
+        appUserType: {
+          headerName: 'X-User-Type',
+        },
+        mockSuite: {
+          headerName: 'X-Mock-Suite',
+        },
+        mockState: {
+          headerName: 'X-Mock-State',
+        }
       },
       mappingStore: require('path').join(__dirname, '../lib/mappings')
     }

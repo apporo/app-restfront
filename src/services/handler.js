@@ -407,31 +407,16 @@ function transformErrorDefault (err, req) {
   return output;
 }
 
-const STANDARD_REQ_OPTIONS = [
-  "requestId",
-  "segmentId",
-  "platformApp",
-  "schemaVersion",
-  "clientType",
-  "clientVersion",
-  "languageCode",
-  "appTierType",
-  "appUserType",
-  "mockSuite",
-  "mockState",
-];
-
 function extractReqOpts (req, pluginCfg, exts = {}) {
   const opts = {};
 
-  for (const i in STANDARD_REQ_OPTIONS) {
-    const optionName = STANDARD_REQ_OPTIONS[i];
-    const headerName = optionName + 'HeaderName';
-    let reqOption = pluginCfg[headerName];
-    if (lodash.isString(reqOption)) {
-      reqOption = { headerName: reqOption };
+  for (const optionKey in pluginCfg.requestOptions) {
+    let requestOption = pluginCfg.requestOptions[optionKey];
+    if (lodash.isString(requestOption)) {
+      requestOption = { headerName: requestOption };
     }
-    opts[optionName] = req.get(reqOption.headerName);
+    const optionName = requestOption.optionName || optionKey;
+    opts[optionName] = req.get(requestOption.headerName);
   }
 
   if (pluginCfg.userAgentEnabled) {

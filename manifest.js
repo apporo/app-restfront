@@ -37,38 +37,44 @@ module.exports = {
             },
             "additionalProperties": false
           },
-          "requestIdHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "segmentIdHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "platformAppHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "schemaVersionHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "clientTypeHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "clientVersionHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "languageCodeHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "appTierTypeHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "appUserTypeHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "mockSuiteHeaderName": {
-            "$ref": "#/definitions/headerConfig"
-          },
-          "mockStateHeaderName": {
-            "$ref": "#/definitions/headerConfig"
+          "requestOptions": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "segmentId": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "platformApp": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "schemaVersion": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "clientType": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "clientVersion": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "languageCode": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "appTierType": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "appUserType": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "mockSuite": {
+                "$ref": "#/definitions/requestOption"
+              },
+              "mockState": {
+                "$ref": "#/definitions/requestOption"
+              }
+            },
+            "additionalProperties": false
           },
           "requestTimeout": {
             "type": "number"
@@ -82,18 +88,22 @@ module.exports = {
         },
         "additionalProperties": false,
         "definitions": {
-          "headerConfig": {
+          "requestOption": {
             "anyOf": [
               {
                 "type": "object",
                 "properties": {
+                  "optionName": {
+                    "type": "string"
+                  },
                   "headerName": {
                     "type": "string"
                   },
                   "required": {
                     "type": "boolean"
                   }
-                }
+                },
+                "required": [ "headerName" ]
               },
               {
                 "type": "string"
