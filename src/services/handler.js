@@ -158,9 +158,6 @@ function Handler(params = {}) {
           if (mapping.output.mutate.rename) {
             packet = mutateRenameFields(packet, mapping.output.mutate.rename);
           }
-          L.has('trace') && L.log('trace', reqTR.add({ result, packet }).toMessage({
-            text: 'Req[${requestId}] is completed'
-          }));
           // Render the packet
           if (lodash.isObject(packet.headers)) {
             lodash.forOwn(packet.headers, function (value, key) {
@@ -172,6 +169,9 @@ function Handler(params = {}) {
           } else {
             res.json(packet.body);
           }
+          L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
+            text: 'Req[${requestId}] is completed'
+          }));
         });
 
         promize = promize.catch(Promise.TimeoutError, function(err) {
@@ -250,14 +250,14 @@ function Handler(params = {}) {
               res.set(key, value);
             });
           }
-          L.has('error') && L.log('error', reqTR.add(packet).toMessage({
-            text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
-          }));
           if (lodash.isString(packet.body)) {
             res.status(packet.statusCode).text(packet.body);
           } else {
             res.status(packet.statusCode).json(packet.body);
           }
+          L.has('error') && L.log('error', reqTR.add(packet).toMessage({
+            text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
+          }));
         });
 
         promize.finally(function () {
