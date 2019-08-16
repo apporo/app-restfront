@@ -159,16 +159,7 @@ function Handler(params = {}) {
             packet = mutateRenameFields(packet, mapping.output.mutate.rename);
           }
           // Render the packet
-          if (lodash.isObject(packet.headers)) {
-            lodash.forOwn(packet.headers, function (value, key) {
-              res.set(key, value);
-            });
-          }
-          if (lodash.isString(packet.body)) {
-            res.text(packet.body);
-          } else {
-            res.json(packet.body);
-          }
+          renderPacketToResponse(packet, res);
           L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
             text: 'Req[${requestId}] is completed'
           }));
@@ -244,17 +235,7 @@ function Handler(params = {}) {
             packet = mutateRenameFields(packet, mapping.error.mutate.rename);
           }
           // Render the packet
-          packet.statusCode = packet.statusCode || 500;
-          if (lodash.isObject(packet.headers)) {
-            lodash.forOwn(packet.headers, function (value, key) {
-              res.set(key, value);
-            });
-          }
-          if (lodash.isString(packet.body)) {
-            res.status(packet.statusCode).text(packet.body);
-          } else {
-            res.status(packet.statusCode).json(packet.body);
-          }
+          renderPacketToResponse(packet, res.status(packet.statusCode || 500));
           L.has('error') && L.log('error', reqTR.add(packet).toMessage({
             text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
           }));
@@ -448,4 +429,17 @@ function extractReqOpts (req, pluginCfg, exts = {}, errors) {
   }
 
   return opts;
+}
+
+function renderPacketToResponse (packet, res) {
+  if (lodash.isObject(packet.headers)) {
+    lodash.forOwn(packet.headers, function (value, key) {
+      res.set(key, value);
+    });
+  }
+  if (lodash.isString(packet.body)) {
+    res.text(packet.body);
+  } else {
+    res.json(packet.body);
+  }
 }
