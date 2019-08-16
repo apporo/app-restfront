@@ -421,7 +421,7 @@ const STANDARD_REQ_OPTIONS = [
   "mockState",
 ];
 
-function extractReqOpts (req, pluginCfg, ext = {}) {
+function extractReqOpts (req, pluginCfg, exts = {}) {
   const opts = {};
 
   for (const i in STANDARD_REQ_OPTIONS) {
@@ -438,8 +438,8 @@ function extractReqOpts (req, pluginCfg, ext = {}) {
     opts.userAgent = uaParser(req.get('User-Agent'));
   }
 
-  for (const key in ext) {
-    opts[key] = ext[key];
+  for (const key in exts) {
+    opts[key] = exts[key];
   }
 
   return opts;
