@@ -87,7 +87,7 @@ module.exports = {
               {
                 "type": "object",
                 "properties": {
-                  "name": {
+                  "headerName": {
                     "type": "string"
                   },
                   "required": {

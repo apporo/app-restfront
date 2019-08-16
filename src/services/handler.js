@@ -427,11 +427,11 @@ function extractReqOpts (req, pluginCfg, exts = {}) {
   for (const i in STANDARD_REQ_OPTIONS) {
     const optionName = STANDARD_REQ_OPTIONS[i];
     const headerName = optionName + 'HeaderName';
-    let headerOpts = pluginCfg[headerName];
-    if (lodash.isString(headerOpts)) {
-      headerOpts = { name: headerOpts };
+    let reqOption = pluginCfg[headerName];
+    if (lodash.isString(reqOption)) {
+      reqOption = { headerName: reqOption };
     }
-    opts[optionName] = req.get(headerOpts.name);
+    opts[optionName] = req.get(reqOption.headerName);
   }
 
   if (pluginCfg.userAgentEnabled) {

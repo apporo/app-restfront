@@ -2,37 +2,39 @@ module.exports = {
   plugins: {
     appRestfront: {
       requestIdHeaderName: {
-        name: 'X-Request-Id',
+        headerName: 'X-Request-Id',
+        required: true,
       },
       segmentIdHeaderName: {
-        name: 'X-Segment-Id',
+        headerName: 'X-Segment-Id',
       },
       platformAppHeaderName: {
-        name: 'X-Platform-App',
+        headerName: 'X-Platform-App',
       },
       schemaVersionHeaderName: {
-        name: 'X-Schema-Version',
+        headerName: 'X-Schema-Version',
+        required: true,
       },
       clientTypeHeaderName: {
-        name: 'X-App-Type',
+        headerName: 'X-App-Type',
       },
       clientVersionHeaderName: {
-        name: 'X-App-Version',
+        headerName: 'X-App-Version',
       },
       languageCodeHeaderName: {
-        name: 'X-Lang-Code',
+        headerName: 'X-Lang-Code',
       },
       appTierTypeHeaderName: {
-        name: 'X-Tier-Type',
+        headerName: 'X-Tier-Type',
       },
       appUserTypeHeaderName: {
-        name: 'X-User-Type',
+        headerName: 'X-User-Type',
       },
       mockSuiteHeaderName: {
-        name: 'X-Mock-Suite',
+        headerName: 'X-Mock-Suite',
       },
       mockStateHeaderName: {
-        name: 'X-Mock-State',
+        headerName: 'X-Mock-State',
       },
       mappingStore: require('path').join(__dirname, '../lib/mappings')
     }
