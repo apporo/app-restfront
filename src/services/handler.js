@@ -14,11 +14,11 @@ const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
 const HTTP_HEADER_RETURN_CODE = 'X-Return-Code';
 
 function Handler(params = {}) {
-  const { loggingFactory, sandboxRegistry, tracelogService, mappingLoader } = params;
+  const { loggingFactory, sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
   const L = loggingFactory.getLogger();
   const T = loggingFactory.getTracer();
+  const packageName = params.packageName || 'app-restfront';
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
-  const serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
 
   const swaggerBuilder = sandboxRegistry.lookupService('app-apispec/swaggerBuilder') ||
       sandboxRegistry.lookupService('app-restguide/swaggerBuilder');
@@ -42,7 +42,12 @@ function Handler(params = {}) {
     });
   }
 
+  const serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
   const serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
+
+  const errorBuilder = errorManager.register(packageName, {
+    errorCodes: pluginCfg.errorCodes
+  });
 
   this.lookupMethod = function(serviceName, methodName) {
     return serviceSelector.lookupMethod(serviceName, methodName);
@@ -101,15 +106,23 @@ function Handler(params = {}) {
         const refMethod = ref && ref.method;
         if (!lodash.isFunction(refMethod)) return next();
 
-        const reqOpts = extractReqOpts(req, pluginCfg, {
-          requestId,
-          timeout: mapping.timeout || pluginCfg.requestTimeout
-        });
-
         let promize = Promise.resolve();
 
-        if (reqOpts.timeout && reqOpts.timeout > 0) {
-          promize = promize.timeout(reqOpts.timeout);
+        const timeout = mapping.timeout || pluginCfg.requestTimeout;
+        if (timeout && timeout > 0) {
+          promize = promize.timeout(timeout);
+        }
+
+        const failedReqOpts = [];
+        const reqOpts = extractReqOpts(req, pluginCfg, { requestId, timeout }, failedReqOpts);
+
+        if (failedReqOpts.length > 0) {
+          promize = Promise.reject(errorBuilder.newError('RequestOptionNotFound', {
+            payload: {
+              requestOptions: failedReqOpts
+            },
+            language: reqOpts.languageCode
+          }));
         }
 
         promize = promize.then(function () {
@@ -259,6 +272,7 @@ function Handler(params = {}) {
 };
 
 Handler.referenceHash = {
+  "errorManager": 'app-errorlist/manager',
   "sandboxRegistry": "devebot/sandboxRegistry",
   "tracelogService": "app-tracelog/tracelogService"
 };
@@ -407,7 +421,7 @@ function transformErrorDefault (err, req) {
   return output;
 }
 
-function extractReqOpts (req, pluginCfg, exts = {}) {
+function extractReqOpts (req, pluginCfg, exts = {}, errors) {
   const opts = {};
 
   for (const optionKey in pluginCfg.requestOptions) {
@@ -416,7 +430,13 @@ function extractReqOpts (req, pluginCfg, exts = {}) {
       requestOption = { headerName: requestOption };
     }
     const optionName = requestOption.optionName || optionKey;
-    opts[optionName] = req.get(requestOption.headerName);
+    const optionValue = req.get(requestOption.headerName);
+    if (requestOption.required && lodash.isNil(optionValue)) {
+      if (lodash.isArray(errors)) {
+        errors.push(optionKey);
+      }
+    }
+    opts[optionName] = optionValue;
   }
 
   if (pluginCfg.userAgentEnabled) {

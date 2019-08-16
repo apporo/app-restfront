@@ -38,6 +38,18 @@ module.exports = {
           headerName: 'X-Mock-State',
         }
       },
+      errorCodes: {
+        RequestOptionNotFound: {
+          message: 'Required request options not found',
+          returnCode: 0100,
+          statusCode: 400
+        },
+        RequestTimeoutError: {
+          message: 'Request timeout',
+          returnCode: 0101,
+          statusCode: 408
+        },
+      },
       mappingStore: require('path').join(__dirname, '../lib/mappings')
     }
   }
