@@ -412,16 +412,19 @@ function extractReqOpts (req, pluginCfg, ext = {}) {
 
   opts.requestId = req.get(pluginCfg.requestIdHeaderName);
   opts.segmentId = req.get(pluginCfg.segmentIdHeaderName);
+  opts.platformApp = req.get(pluginCfg.platformAppHeaderName);
+  opts.schemaVersion = req.get(pluginCfg.schemaVersionHeaderName);
   opts.clientType = req.get(pluginCfg.clientTypeHeaderName);
   opts.clientVersion = req.get(pluginCfg.clientVersionHeaderName);
   opts.languageCode = req.get(pluginCfg.languageCodeHeaderName);
-  opts.systemPhase = req.get(pluginCfg.systemPhaseHeaderName);
+  opts.appTierType = req.get(pluginCfg.appTierTypeHeaderName);
+  opts.appUserType = req.get(pluginCfg.appUserTypeHeaderName);
 
   opts.mockSuite = req.get(pluginCfg.mockSuiteHeaderName);
   opts.mockState = req.get(pluginCfg.mockStateHeaderName);
 
   if (pluginCfg.userAgentEnabled) {
-    opts.userAgent = uaParser(req.get('user-agent'));
+    opts.userAgent = uaParser(req.get('User-Agent'));
   }
 
   for (const key in ext) {

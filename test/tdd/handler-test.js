@@ -183,21 +183,31 @@ describe('handler', function() {
   });
 
   describe('extractReqOpts()', function() {
+    var STANDARD_REQ_HEADERS = [
+      "requestId",
+      "segmentId",
+      "platformApp",
+      "schemaVersion",
+      "clientType",
+      "clientVersion",
+      "languageCode",
+      "appTierType",
+      "appUserType",
+      "mockSuite",
+      "mockState",
+    ];
     var Handler, extractReqOpts;
 
     var app = require(path.join(__dirname, '../app'));
     var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
 
-    var req = new function() {
-      var reqHeaders = {
+    var req = new RequestMock({
+      headers: {
         'X-Request-Id': '52160bbb-cac5-405f-a1e9-a55323b17938',
         'X-App-Type': 'agent',
         'X-App-Version': '0.1.0'
-      };
-      this.get = function(name) {
-        return reqHeaders[name];
       }
-    }();
+    });
 
     beforeEach(function() {
       Handler = dtk.acquire('handler');
@@ -212,16 +222,7 @@ describe('handler', function() {
         "clientVersion": "0.1.0"
       };
       assert.deepInclude(output, expected);
-      assert.sameMembers(lodash.keys(output), [
-        "requestId",
-        "segmentId",
-        "clientType",
-        "clientVersion",
-        "languageCode",
-        "systemPhase",
-        "mockSuite",
-        "mockState",
-      ]);
+      assert.sameMembers(lodash.keys(output), STANDARD_REQ_HEADERS);
     });
 
     it('the headers will be overridden by extensions', function() {
@@ -236,17 +237,80 @@ describe('handler', function() {
         "timeout": 1000
       };
       assert.deepInclude(output, expected);
-      assert.sameMembers(lodash.keys(output), [
-        "requestId",
-        "segmentId",
-        "clientType",
-        "clientVersion",
-        "languageCode",
-        "systemPhase",
-        "mockSuite",
-        "mockState",
-        "timeout",
-      ]);
+      assert.sameMembers(lodash.keys(output), STANDARD_REQ_HEADERS.concat([ "timeout" ]));
+    });
+
+    var config = lodash.assign({ userAgentEnabled: true }, sandboxConfig);
+
+    it('uaParser is safety: should not crack the requests in any case', function() {
+      var req = new RequestMock({
+        headers: {
+          'User-Agent': null
+        }
+      });
+      var output = extractReqOpts(req, config);
+      assert.deepInclude(output.userAgent, {
+        "os": {
+          "name": undefined,
+          "version": undefined
+        },
+        "ua": ""
+      });
+    });
+
+    it('uaParser is safety: should not crack the requests with wrong user-agent format', function() {
+      var req = new RequestMock({
+        headers: {
+          'User-Agent': 'Any string, wrong format'
+        }
+      });
+      var output = extractReqOpts(req, config);
+      assert.deepInclude(output.userAgent, {
+        "os": {
+          "name": undefined,
+          "version": undefined
+        },
+        "ua": "Any string, wrong format"
+      });
+    });
+
+    it('uaParser parse the user-agent string into JSON object properly', function() {
+      var req = new RequestMock({
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.2 (KHTML, like Gecko) Ubuntu/11.10 Chromium/15.0.874.106 Chrome/15.0.874.106 Safari/535.2',
+        }
+      });
+      var output = extractReqOpts(req, config);
+      assert.deepInclude(output.userAgent, {
+        "browser": {
+          "name": "Chromium",
+          "version": "15.0.874.106",
+          "major": "15"
+        },
+        "engine": {
+          "name": "WebKit",
+          "version": "535.2"
+        },
+        "os": {
+          "name": "Ubuntu",
+          "version": "11.10"
+        },
+        "cpu": {
+          "architecture": "amd64"
+        }
+      });
     });
   });
 });
+
+function RequestMock (defs = {}) {
+  var store = { };
+
+  store.headers = lodash.mapKeys(defs.headers, function(value, key) {
+    return lodash.lowerCase(key);
+  });
+
+  this.get = function(name) {
+    return store.headers[lodash.lowerCase(name)];
+  }
+}

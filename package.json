@@ -36,6 +36,7 @@
     "devebot": "^0.3.0"
   },
   "dependencies": {
+    "app-errorlist": "^0.3.2",
     "app-tracelog": "^0.3.0",
     "devebot": "^0.3.0",
     "path-to-regexp": "2.4.0",

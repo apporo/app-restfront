@@ -43,6 +43,12 @@ module.exports = {
           "segmentIdHeaderName": {
             "type": "string"
           },
+          "platformAppHeaderName": {
+            "type": "string"
+          },
+          "schemaVersionHeaderName": {
+            "type": "string"
+          },
           "clientTypeHeaderName": {
             "type": "string"
           },
@@ -52,7 +58,10 @@ module.exports = {
           "languageCodeHeaderName": {
             "type": "string"
           },
-          "systemPhaseHeaderName": {
+          "appTierTypeHeaderName": {
+            "type": "string"
+          },
+          "appUserTypeHeaderName": {
             "type": "string"
           },
           "mockSuiteHeaderName": {
