@@ -201,6 +201,14 @@ function upgradeMapping(mapping = {}) {
 
 function buildMiddlewareFromMapping(context, mapping) {
   const { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg } = context;
+
+  const timeout = mapping.timeout || pluginCfg.requestTimeout;
+
+  const ref = serviceSelector.lookupMethod(mapping.serviceName, mapping.methodName);
+  const refMethod = ref && ref.method;
+
+  const requestOptions = lodash.merge({}, pluginCfg.requestOptions, mapping.requestOptions);
+
   return function (req, res, next) {
     if (req.method !== mapping.method) return next();
     const requestId = tracelogService.getRequestId(req);
@@ -214,19 +222,19 @@ function buildMiddlewareFromMapping(context, mapping) {
       text: 'Req[${requestId}] from [${method}]${url}'
     }, 'direct'));
 
-    const ref = serviceSelector.lookupMethod(mapping.serviceName, mapping.methodName);
-    const refMethod = ref && ref.method;
     if (!lodash.isFunction(refMethod)) return next();
 
     let promize = Promise.resolve();
 
-    const timeout = mapping.timeout || pluginCfg.requestTimeout;
     if (timeout && timeout > 0) {
       promize = promize.timeout(timeout);
     }
 
     const failedReqOpts = [];
-    const reqOpts = extractReqOpts(req, pluginCfg, { requestId, timeout }, failedReqOpts);
+    const reqOpts = extractReqOpts(req, requestOptions, {
+      userAgentEnabled: pluginCfg.userAgentEnabled,
+      extensions: { requestId, timeout }
+    }, failedReqOpts);
 
     if (failedReqOpts.length > 0) {
       promize = Promise.reject(errorBuilder.newError('RequestOptionNotFound', {
@@ -393,11 +401,11 @@ function transformErrorDefault (err, responseOptions) {
   return output;
 }
 
-function extractReqOpts (req, pluginCfg, exts = {}, errors) {
-  const opts = {};
+function extractReqOpts (req, requestOptions, opts = {}, errors) {
+  const result = {};
 
-  for (const optionKey in pluginCfg.requestOptions) {
-    let requestOption = pluginCfg.requestOptions[optionKey];
+  for (const optionKey in requestOptions) {
+    let requestOption = requestOptions[optionKey];
     if (lodash.isString(requestOption)) {
       requestOption = { headerName: requestOption };
     }
@@ -408,18 +416,18 @@ function extractReqOpts (req, pluginCfg, exts = {}, errors) {
         errors.push(optionKey);
       }
     }
-    opts[optionName] = optionValue;
+    result[optionName] = optionValue;
   }
 
-  if (pluginCfg.userAgentEnabled) {
-    opts.userAgent = uaParser(req.get('User-Agent'));
+  if (opts.userAgentEnabled) {
+    result.userAgent = uaParser(req.get('User-Agent'));
   }
 
-  for (const key in exts) {
-    opts[key] = exts[key];
+  for (const key in opts.extensions) {
+    result[key] = opts.extensions[key];
   }
 
-  return opts;
+  return result;
 }
 
 function renderPacketToResponse (packet, res) {

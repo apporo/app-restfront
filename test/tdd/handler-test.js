@@ -217,7 +217,7 @@ describe('handler', function() {
     });
 
     it('extract the predefined headers properly', function() {
-      var output = extractReqOpts(req, sandboxConfig);
+      var output = extractReqOpts(req, sandboxConfig.requestOptions);
       var expected = {
         "requestId": "52160bbb-cac5-405f-a1e9-a55323b17938",
         "clientType": "agent",
@@ -230,9 +230,11 @@ describe('handler', function() {
     });
 
     it('the headers will be overridden by extensions', function() {
-      var output = extractReqOpts(req, sandboxConfig, {
-        requestId: "7f36af79-077b-448e-9c66-fc177996fd10",
-        timeout: 1000
+      var output = extractReqOpts(req, sandboxConfig.requestOptions, {
+        extensions: {
+          requestId: "7f36af79-077b-448e-9c66-fc177996fd10",
+          timeout: 1000
+        }
       });
       var expected = {
         "requestId": "7f36af79-077b-448e-9c66-fc177996fd10",
@@ -254,7 +256,7 @@ describe('handler', function() {
           'User-Agent': null
         }
       });
-      var output = extractReqOpts(req, config);
+      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "os": {
           "name": undefined,
@@ -270,7 +272,7 @@ describe('handler', function() {
           'User-Agent': 'Any string, wrong format'
         }
       });
-      var output = extractReqOpts(req, config);
+      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "os": {
           "name": undefined,
@@ -286,7 +288,7 @@ describe('handler', function() {
           'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.2 (KHTML, like Gecko) Ubuntu/11.10 Chromium/15.0.874.106 Chrome/15.0.874.106 Safari/535.2',
         }
       });
-      var output = extractReqOpts(req, config);
+      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "browser": {
           "name": "Chromium",
@@ -329,6 +331,19 @@ describe('handler', function() {
         }
       }, packet));
     });
+
+    it('skip to add the default header to the packet if it has already exists', function() {
+      var packet = {
+        headers: {
+          'X-Return-Code': 1
+        },
+        body: {
+          message: 'Hello world'
+        }
+      };
+      var output = addDefaultHeaders(packet, sandboxConfig.responseOptions);
+      assert.deepEqual(output, packet);
+    })
   });
 });
 
