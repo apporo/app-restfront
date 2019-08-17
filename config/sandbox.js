@@ -5,7 +5,7 @@ module.exports = {
         requestId: {
           headerName: 'X-Request-Id',
           optionName: 'requestId',
-          required: true,
+          required: false,
         },
         segmentId: {
           headerName: 'X-Segment-Id',
@@ -36,6 +36,14 @@ module.exports = {
         },
         mockState: {
           headerName: 'X-Mock-State',
+        }
+      },
+      responseOptions: {
+        packageRef: {
+          headerName: 'X-Package-Ref',
+        },
+        returnCode: {
+          headerName: 'X-Return-Code',
         }
       },
       errorCodes: {

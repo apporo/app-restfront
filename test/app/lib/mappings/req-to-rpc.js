@@ -6,6 +6,11 @@ var mappings = {
     {
       path: '/:apiVersion/fibonacci/calc/:number',
       method: 'GET',
+      headerOptions: {
+        requestId: {
+          required: true
+        }
+      },
       input: {
         transform: function (req) {
           return { number: req.params.number }

@@ -7,6 +7,9 @@ var dtk = require('liberica').mockit;
 var path = require('path');
 
 describe('handler', function() {
+  var app = require(path.join(__dirname, '../app'));
+  var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
+
   describe('sanitizeMappings()', function() {
     var loggingFactory = dtk.createLoggingFactoryMock({ captureMethodCall: false });
     var ctx = {
@@ -198,9 +201,6 @@ describe('handler', function() {
     ];
     var Handler, extractReqOpts;
 
-    var app = require(path.join(__dirname, '../app'));
-    var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
-
     var req = new RequestMock({
       headers: {
         'X-Request-Id': '52160bbb-cac5-405f-a1e9-a55323b17938',
@@ -305,6 +305,29 @@ describe('handler', function() {
           "architecture": "amd64"
         }
       });
+    });
+  });
+
+  describe('addDefaultHeaders()', function() {
+    var Handler, addDefaultHeaders;
+
+    beforeEach(function() {
+      Handler = dtk.acquire('handler');
+      addDefaultHeaders = dtk.get(Handler, 'addDefaultHeaders');
+    });
+
+    it('add the default header to the packet', function() {
+      var packet = {
+        body: {
+          message: 'Hello world'
+        }
+      };
+      var output = addDefaultHeaders(packet, sandboxConfig.responseOptions);
+      assert.deepEqual(output, lodash.assign({
+        headers: {
+          'X-Return-Code': 0
+        }
+      }, packet));
     });
   });
 });

@@ -109,6 +109,17 @@ module.exports = {
           "requestTimeout": {
             "type": "number"
           },
+          "responseOptions": {
+            "type": "object",
+            "properties": {
+              "packageRef": {
+                "$ref": "#/definitions/responseOption"
+              },
+              "returnCode": {
+                "$ref": "#/definitions/responseOption"
+              }
+            }
+          },
           "autowired": {
             "type": "boolean"
           },
@@ -140,6 +151,15 @@ module.exports = {
                 "type": "string"
               }
             ]
+          },
+          "responseOption": {
+            "type": "object",
+            "properties": {
+              "headerName": {
+                "type": "string"
+              }
+            },
+            "required": [ "headerName" ]
           }
         }
       }

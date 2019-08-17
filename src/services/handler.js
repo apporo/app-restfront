@@ -11,8 +11,6 @@ const path = require('path');
 const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
 
-const HTTP_HEADER_RETURN_CODE = 'X-Return-Code';
-
 function Handler(params = {}) {
   const { loggingFactory, sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
   const L = loggingFactory.getLogger();
@@ -266,8 +264,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       } else {
         packet = { body: result };
       }
-      packet.headers = packet.headers || {};
-      packet.headers[HTTP_HEADER_RETURN_CODE] = packet.headers[HTTP_HEADER_RETURN_CODE] || 0;
+      packet = addDefaultHeaders(packet, pluginCfg.responseOptions);
       // rename the fields
       if (mapping.output.mutate.rename) {
         packet = mutateRenameFields(packet, mapping.output.mutate.rename);
@@ -304,7 +301,7 @@ function buildMiddlewareFromMapping(context, mapping) {
         }
       } else {
         if (failed instanceof Error) {
-          packet = transformErrorDefault(failed);
+          packet = transformErrorDefault(failed, pluginCfg.responseOptions);
           if (chores.isDevelopmentMode()) {
             packet.body.stack = lodash.split(failed.stack, "\n");
           }
@@ -367,16 +364,16 @@ function mutateRenameFields (obj, nameMappings) {
   return obj;
 }
 
-function transformOutputDefault (data, req) {
-  const output = {
-    headers: {},
-    body: data
-  };
-  output.headers[HTTP_HEADER_RETURN_CODE] = 0;
-  return output;
+function addDefaultHeaders (packet, responseOptions) {
+  packet.headers = packet.headers || {};
+  const headerName = responseOptions['returnCode']['headerName'];
+  if ((typeof headerName === 'string') && !(headerName in packet.headers)) {
+    packet.headers[headerName] = 0;
+  }
+  return packet;
 }
 
-function transformErrorDefault (err, req) {
+function transformErrorDefault (err, responseOptions) {
   const output = {
     statusCode: err.statusCode || 500,
     headers: {},
@@ -385,9 +382,11 @@ function transformErrorDefault (err, req) {
       message: err.message
     }
   };
-  if (err.returnCode) {
-    output.headers[HTTP_HEADER_RETURN_CODE] = err.returnCode;
-  }
+  lodash.forOwn(responseOptions, function(resOpt = {}, optionName) {
+    if (optionName in err && lodash.isString(resOpt.headerName)) {
+      output.headers[resOpt.headerName] = err[optionName];
+    }
+  });
   if (lodash.isObject(err.payload)) {
     output.body.payload = err.payload;
   }
