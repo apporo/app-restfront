@@ -3,7 +3,6 @@
 const Devebot = require('devebot');
 const Promise = Devebot.require('bluebird');
 const chores = Devebot.require('chores');
-const nodash = Devebot.require('nodash');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 const uaParser = require('ua-parser-js');
@@ -130,6 +129,7 @@ function joinMappings (mappingHash, mappings = []) {
 
 function sanitizeMappings (mappingHash, newMappings = {}) {
   lodash.forOwn(mappingHash, function(mappingList, name) {
+    mappingList = mappingList || {};
     const apiPath = mappingList['apiPath'];
     newMappings[name] = newMappings[name] || {};
     // prefix the paths of middlewares by apiPath
@@ -285,7 +285,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       }));
     });
 
-    promize = promize.catch(Promise.TimeoutError, function(err) {
+    promize = promize.catch(Promise.TimeoutError, function() {
       L.has('error') && L.log('error', reqTR.add({
         timeout: reqOpts.timeout
       }).toMessage({
@@ -431,6 +431,10 @@ function extractReqOpts (req, requestOptions, opts = {}, errors) {
   return result;
 }
 
+function isPureObject (o) {
+  return o && (typeof o === 'object') && !Array.isArray(o);
+}
+
 function renderPacketToResponse_Standard (packet = {}, res) {
   if (lodash.isObject(packet.headers)) {
     lodash.forOwn(packet.headers, function (value, key) {
@@ -449,8 +453,8 @@ function renderPacketToResponse_Standard (packet = {}, res) {
 }
 
 function renderPacketToResponse_Optimized (packet = {}, res) {
-  // affected with JSON, array, string
-  if (nodash.isObject(packet.headers)) {
+  // affected with a Pure JSON object
+  if (isPureObject(packet.headers)) {
     for (const key in packet.headers) {
       res.set(key, packet.headers[key]);
     }
