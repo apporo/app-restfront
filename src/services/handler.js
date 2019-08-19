@@ -3,6 +3,7 @@
 const Devebot = require('devebot');
 const Promise = Devebot.require('bluebird');
 const chores = Devebot.require('chores');
+const nodash = Devebot.require('nodash');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 const uaParser = require('ua-parser-js');
@@ -202,7 +203,7 @@ function upgradeMapping(mapping = {}) {
 function buildMiddlewareFromMapping(context, mapping) {
   const { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg } = context;
 
-  const timeout = mapping.timeout || pluginCfg.requestTimeout;
+  const timeout = mapping.timeout || pluginCfg.defaultTimeout;
 
   const ref = serviceSelector.lookupMethod(mapping.serviceName, mapping.methodName);
   const refMethod = ref && ref.method;
@@ -430,15 +431,43 @@ function extractReqOpts (req, requestOptions, opts = {}, errors) {
   return result;
 }
 
-function renderPacketToResponse (packet, res) {
+function renderPacketToResponse_Standard (packet = {}, res) {
   if (lodash.isObject(packet.headers)) {
     lodash.forOwn(packet.headers, function (value, key) {
       res.set(key, value);
     });
   }
-  if (lodash.isString(packet.body)) {
-    res.text(packet.body);
+  if (lodash.isNil(packet.body)) {
+    res.end();
   } else {
-    res.json(packet.body);
+    if (lodash.isString(packet.body)) {
+      res.text(packet.body);
+    } else {
+      res.json(packet.body);
+    }
   }
+}
+
+function renderPacketToResponse_Optimized (packet = {}, res) {
+  // affected with JSON, array, string
+  if (nodash.isObject(packet.headers)) {
+    for (const key in packet.headers) {
+      res.set(key, packet.headers[key]);
+    }
+  }
+  if (packet.body === undefined || packet.body === null) {
+    res.end();
+  } else {
+    if (typeof packet.body === 'string') {
+      res.text(packet.body);
+    } else {
+      res.json(packet.body);
+    }
+  }
+}
+
+let renderPacketToResponse = renderPacketToResponse_Standard;
+
+if (chores.isUpgradeSupported('optimization-mode')) {
+  renderPacketToResponse = renderPacketToResponse_Optimized;
 }

@@ -4,6 +4,7 @@ var devebot = require('devebot');
 var lodash = devebot.require('lodash');
 var assert = require('liberica').assert;
 var dtk = require('liberica').mockit;
+var sinon = require('liberica').sinon;
 var path = require('path');
 
 describe('handler', function() {
@@ -345,6 +346,62 @@ describe('handler', function() {
       assert.deepEqual(output, packet);
     })
   });
+
+  describe('renderPacketToResponse()', function() {
+    var Handler, renderPacketToResponse;
+
+    beforeEach(function() {
+      Handler = dtk.acquire('handler');
+      renderPacketToResponse = dtk.get(Handler, 'renderPacketToResponse');
+    });
+
+    it('render empty packet', function() {
+      var res = new ResponseMock();
+      renderPacketToResponse({}, res);
+      assert.equal(res.set.callCount, 0);
+      assert.equal(res.text.callCount, 0);
+      assert.equal(res.json.callCount, 0);
+      assert.equal(res.end.callCount, 1);
+    });
+
+    it('render with a null headers', function() {
+      var res = new ResponseMock();
+      renderPacketToResponse({
+        headers: null
+      }, res);
+      assert.equal(res.set.callCount, 0);
+    });
+
+    it('render with a headers as a string', function() {
+      var res = new ResponseMock();
+      renderPacketToResponse({
+        headers: 'hello world'
+      }, res);
+      assert.equal(res.set.callCount, 0);
+    });
+
+    it('render with invalid headers (boolean/number)', function() {
+      var res = new ResponseMock();
+      renderPacketToResponse({
+        headers: true
+      }, res);
+      assert.equal(res.set.callCount, 0);
+    });
+
+    it('render a packet with 2 headers and empty body', function() {
+      var res = new ResponseMock();
+      renderPacketToResponse({
+        headers: {
+          'X-Request-Id': 0,
+          'X-Schema-Version': '1.0.0',
+        }
+      }, res);
+      assert.equal(res.set.callCount, 2);
+      assert.equal(res.text.callCount, 0);
+      assert.equal(res.json.callCount, 0);
+      assert.equal(res.end.callCount, 1);
+    });
+  });
 });
 
 function RequestMock (defs = {}) {
@@ -357,4 +414,11 @@ function RequestMock (defs = {}) {
   this.get = function(name) {
     return store.headers[lodash.lowerCase(name)];
   }
+}
+
+function ResponseMock (defs = {}) {
+  this.set = sinon.stub();
+  this.text = sinon.stub();
+  this.json = sinon.stub();
+  this.end = sinon.stub();
 }

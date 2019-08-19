@@ -40,7 +40,7 @@ module.exports = {
           "errorCodes": {
             "type": "object",
             "patternProperties": {
-              "^[a-zA-Z]\w*$": {
+              "^[a-zA-Z]\\w*$": {
                 "type": "object",
                 "properties": {
                   "message": {
@@ -66,6 +66,9 @@ module.exports = {
                 "additionalProperties": false
               }
             }
+          },
+          "defaultTimeout": {
+            "type": "number"
           },
           "requestOptions": {
             "type": "object",
@@ -105,9 +108,6 @@ module.exports = {
               }
             },
             "additionalProperties": false
-          },
-          "requestTimeout": {
-            "type": "number"
           },
           "responseOptions": {
             "type": "object",
