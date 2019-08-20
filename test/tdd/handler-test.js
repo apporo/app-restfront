@@ -402,6 +402,27 @@ describe('handler', function() {
       assert.equal(res.end.callCount, 1);
     });
   });
+
+  describe('buildMiddlewareFromMapping()', function() {
+    var Handler, buildMiddlewareFromMapping;
+
+    beforeEach(function() {
+      Handler = dtk.acquire('handler');
+      buildMiddlewareFromMapping = dtk.get(Handler, 'buildMiddlewareFromMapping');
+    });
+
+    it('[ok]');
+
+    it('[timeout]');
+
+    it('service method is a normal function [error]');
+
+    it('service method is a promise function [error]');
+
+    it('predefined error [error]');
+
+    it('undefined error [error]');
+  });
 });
 
 function RequestMock (defs = {}) {

@@ -12,17 +12,16 @@ const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
     chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
 
 function Handler(params = {}) {
-  const { loggingFactory, sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
+  const { loggingFactory, packageName, sandboxConfig } = params;
+  const { sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
   const L = loggingFactory.getLogger();
   const T = loggingFactory.getTracer();
-  const packageName = params.packageName || 'app-restfront';
-  const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
 
   let mappingHash;
   if (BUILTIN_MAPPING_LOADER) {
-    mappingHash = mappingLoader.loadMappings(pluginCfg.mappingStore);
+    mappingHash = mappingLoader.loadMappings(sandboxConfig.mappingStore);
   } else {
-    mappingHash = loadMappings(pluginCfg.mappingStore);
+    mappingHash = loadMappings(sandboxConfig.mappingStore);
   }
 
   mappingHash = sanitizeMappings(mappingHash);
@@ -40,14 +39,14 @@ function Handler(params = {}) {
     });
   }
 
-  const serviceResolver = pluginCfg.serviceResolver || 'app-opmaster/commander';
+  const serviceResolver = sandboxConfig.serviceResolver || 'app-opmaster/commander';
   const serviceSelector = chores.newServiceSelector({ serviceResolver, sandboxRegistry });
 
   const errorBuilder = errorManager.register(packageName, {
-    errorCodes: pluginCfg.errorCodes
+    errorCodes: sandboxConfig.errorCodes
   });
 
-  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg };
+  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig };
 
   this.validator = function (express) {
     const router = express.Router();
@@ -201,14 +200,14 @@ function upgradeMapping(mapping = {}) {
 }
 
 function buildMiddlewareFromMapping(context, mapping) {
-  const { L, T, errorBuilder, serviceSelector, tracelogService, pluginCfg } = context;
+  const { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig } = context;
 
-  const timeout = mapping.timeout || pluginCfg.defaultTimeout;
+  const timeout = mapping.timeout || sandboxConfig.defaultTimeout;
 
   const ref = serviceSelector.lookupMethod(mapping.serviceName, mapping.methodName);
   const refMethod = ref && ref.method;
 
-  const requestOptions = lodash.merge({}, pluginCfg.requestOptions, mapping.requestOptions);
+  const requestOptions = lodash.merge({}, sandboxConfig.requestOptions, mapping.requestOptions);
 
   return function (req, res, next) {
     if (req.method !== mapping.method) return next();
@@ -233,7 +232,7 @@ function buildMiddlewareFromMapping(context, mapping) {
 
     const failedReqOpts = [];
     const reqOpts = extractReqOpts(req, requestOptions, {
-      userAgentEnabled: pluginCfg.userAgentEnabled,
+      userAgentEnabled: sandboxConfig.userAgentEnabled,
       extensions: { requestId, timeout }
     }, failedReqOpts);
 
@@ -273,7 +272,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       } else {
         packet = { body: result };
       }
-      packet = addDefaultHeaders(packet, pluginCfg.responseOptions);
+      packet = addDefaultHeaders(packet, sandboxConfig.responseOptions);
       // rename the fields
       if (mapping.output.mutate.rename) {
         packet = mutateRenameFields(packet, mapping.output.mutate.rename);
@@ -310,7 +309,7 @@ function buildMiddlewareFromMapping(context, mapping) {
         }
       } else {
         if (failed instanceof Error) {
-          packet = transformErrorDefault(failed, pluginCfg.responseOptions);
+          packet = transformErrorDefault(failed, sandboxConfig.responseOptions);
           if (chores.isDevelopmentMode()) {
             packet.body.stack = lodash.split(failed.stack, "\n");
           }
@@ -459,6 +458,7 @@ function renderPacketToResponse_Optimized (packet = {}, res) {
       res.set(key, packet.headers[key]);
     }
   }
+  res.status(packet.statusCode || 200);
   if (packet.body === undefined || packet.body === null) {
     res.end();
   } else {

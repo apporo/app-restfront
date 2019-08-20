@@ -1,4 +1,7 @@
 module.exports = {
+  devebot: {
+    coupling: 'loose',
+  },
   logger: {
     transports: {
       console: {
