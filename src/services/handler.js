@@ -290,7 +290,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       }).toMessage({
         text: 'Req[${requestId}] has timeout after ${timeout} seconds'
       }));
-      return Promise.reject(errorBuilder.newError('RequestTimeoutError', {
+      return Promise.reject(errorBuilder.newError('RequestTimeoutOnServer', {
         payload: {
           timeout: reqOpts.timeout
         },

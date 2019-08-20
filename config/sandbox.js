@@ -52,7 +52,7 @@ module.exports = {
           returnCode: 100,
           statusCode: 400
         },
-        RequestTimeoutError: {
+        RequestTimeoutOnServer: {
           message: 'Request timeout',
           returnCode: 101,
           statusCode: 408
