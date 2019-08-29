@@ -326,11 +326,14 @@ describe('handler', function() {
         }
       };
       var output = addDefaultHeaders(packet, sandboxConfig.responseOptions);
-      assert.deepEqual(output, lodash.assign({
+      assert.deepEqual(output, {
         headers: {
           'X-Return-Code': 0
+        },
+        body: {
+          message: 'Hello world'
         }
-      }, packet));
+      });
     });
 
     it('skip to add the default header to the packet if it has already exists', function() {
@@ -343,7 +346,14 @@ describe('handler', function() {
         }
       };
       var output = addDefaultHeaders(packet, sandboxConfig.responseOptions);
-      assert.deepEqual(output, packet);
+      assert.deepEqual(output, {
+        headers: {
+          'X-Return-Code': 1
+        },
+        body: {
+          message: 'Hello world'
+        }
+      });
     })
   });
 
