@@ -6,7 +6,7 @@ var mappings = {
     {
       path: '/:apiVersion/fibonacci/calc/:number',
       method: 'GET',
-      headerOptions: {
+      requestOptions: {
         requestId: {
           required: true
         }

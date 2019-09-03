@@ -8,23 +8,13 @@ const Validator = require('schema-validator');
 const uaParser = require('ua-parser-js');
 const path = require('path');
 
-const BUILTIN_MAPPING_LOADER = chores.isVersionLTE && chores.getVersionOf &&
-    chores.isVersionLTE("0.3.1", chores.getVersionOf("devebot"));
-
 function Handler(params = {}) {
   const { loggingFactory, packageName, sandboxConfig } = params;
   const { sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
   const L = loggingFactory.getLogger();
   const T = loggingFactory.getTracer();
 
-  let mappingHash;
-  if (BUILTIN_MAPPING_LOADER) {
-    mappingHash = mappingLoader.loadMappings(sandboxConfig.mappingStore);
-  } else {
-    mappingHash = loadMappings(sandboxConfig.mappingStore);
-  }
-
-  mappingHash = sanitizeMappings(mappingHash);
+  const mappingHash = sanitizeMappings(mappingLoader.loadMappings(sandboxConfig.mappingStore));
 
   const mappings = joinMappings(mappingHash);
 
@@ -90,31 +80,13 @@ function Handler(params = {}) {
 };
 
 Handler.referenceHash = {
-  "errorManager": 'app-errorlist/manager',
-  "sandboxRegistry": "devebot/sandboxRegistry",
-  "tracelogService": "app-tracelog/tracelogService"
+  errorManager: "app-errorlist/manager",
+  mappingLoader: "devebot/mappingLoader",
+  sandboxRegistry: "devebot/sandboxRegistry",
+  tracelogService: "app-tracelog/tracelogService"
 };
 
-if (BUILTIN_MAPPING_LOADER) {
-  Handler.referenceHash["mappingLoader"] = "devebot/mappingLoader";
-}
-
 module.exports = Handler;
-
-function loadMappings (mappingStore) {
-  const mappingHash = {};
-  if (lodash.isString(mappingStore)) {
-    let store = {};
-    store[chores.getUUID()] = mappingStore;
-    mappingStore = store;
-  }
-  if (lodash.isObject(mappingStore)) {
-    lodash.forOwn(mappingStore, function(path, name) {
-      mappingHash[name] = require(path);
-    });
-  }
-  return mappingHash;
-}
 
 function joinMappings (mappingHash, mappings = []) {
   lodash.forOwn(mappingHash, function(mappingBundle, name) {
