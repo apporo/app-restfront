@@ -36,7 +36,7 @@ function Handler(params = {}) {
     errorCodes: sandboxConfig.errorCodes
   });
 
-  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator };
+  const CTX = { L, T, errorManager, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator };
 
   this.validator = function (express) {
     const router = express.Router();
@@ -90,10 +90,12 @@ Handler.referenceHash = {
 module.exports = Handler;
 
 function joinMappings (mappingHash, mappings = []) {
-  lodash.forOwn(mappingHash, function(mappingBundle, name) {
+  lodash.forOwn(mappingHash, function(mappingBundle, mappingName) {
     const list = mappingBundle.apiMaps;
     if (lodash.isArray(list)) {
-      mappings.push.apply(mappings, list);
+      mappings.push.apply(mappings, lodash.map(list, function(item) {
+        return lodash.assign(item, { packageName: mappingName });
+      }));
     }
   });
   return mappings;
@@ -182,7 +184,7 @@ function upgradeMapping(mapping = {}) {
 }
 
 function buildMiddlewareFromMapping(context, mapping) {
-  const { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator } = context;
+  const { L, T, errorManager, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator } = context;
 
   const timeout = mapping.timeout || sandboxConfig.defaultTimeout;
 
@@ -191,7 +193,11 @@ function buildMiddlewareFromMapping(context, mapping) {
 
   const requestOptions = lodash.merge({}, sandboxConfig.requestOptions, mapping.requestOptions);
 
-  const services = { logger: L, tracer: T, errorBuilder, schemaValidator };
+  const mappingErrorBuilder = errorManager.getErrorBuilder(mapping.packageName) || errorBuilder;
+
+  const BusinessError = errorManager.BusinessError;
+
+  const services = { logger: L, tracer: T, BusinessError, errorBuilder: mappingErrorBuilder, schemaValidator };
 
   return function (req, res, next) {
     if (req.method !== mapping.method) return next();
@@ -231,7 +237,10 @@ function buildMiddlewareFromMapping(context, mapping) {
 
     if (mapping.input.enabled !== false && mapping.input.preValidator) {
       promize = promize.then(function () {
-        return applyValidator(mapping.input.preValidator, 'RequestPreValidationError', req, reqOpts, services);
+        return applyValidator(mapping.input.preValidator, {
+          errorBuilder: errorBuilder,
+          errorName: 'RequestPreValidationError'
+        }, req, reqOpts, services);
       });
     }
 
@@ -250,7 +259,10 @@ function buildMiddlewareFromMapping(context, mapping) {
 
     if (mapping.input.enabled !== false && mapping.input.postValidator) {
       promize = promize.then(function (reqData) {
-        return applyValidator(mapping.input.postValidator, 'RequestPostValidationError', reqData, reqOpts, services);
+        return applyValidator(mapping.input.postValidator, {
+          errorBuilder: errorBuilder,
+          errorName: 'RequestPostValidationError'
+        }, reqData, reqOpts, services);
       });
     }
 
@@ -368,16 +380,21 @@ function mutateRenameFields (obj, nameMappings) {
   return obj;
 }
 
-function applyValidator (validator, defaultErrorCode, reqData, reqOpts, services) {
-  const { errorBuilder } = services;
+function applyValidator (validator, defaultRef, reqData, reqOpts, services) {
   return Promise.resolve(validator(reqData, reqOpts, services))
   .then(function (result) {
     if (!isPureObject(result)) {
       result = { valid: result }
     }
     if (result.valid === false) {
-      const errorCode = result.errorCode || defaultErrorCode;
-      return Promise.reject(errorBuilder.newError(errorCode, {
+      if (result.errorName && services.errorBuilder) {
+        return Promise.reject(services.errorBuilder.newError(result.errorName, {
+          payload: {
+            errors: result.errors
+          }
+        }));
+      }
+      return Promise.reject(defaultRef.errorBuilder.newError(defaultRef.errorName, {
         payload: {
           errors: result.errors
         }

@@ -5,12 +5,26 @@ var contextPath = '/restfront';
 var apiPath = 'rest';
 
 module.exports = {
+  application: {
+    errorCodes: {
+      FibonacciError: {
+        message: 'Fibonacci calculation is error',
+        returnCode: 1001,
+        statusCode: 400
+      },
+      MaximumExceeding: {
+        message: 'Maximum input number exceeded',
+        returnCode: 1002,
+        statusCode: 400
+      },
+    }
+  },
   plugins: {
     appRestfront: {
       contextPath: contextPath,
       apiPath: apiPath,
       mappingStore: {
-        "example-mappings": path.join(__dirname, '../lib/mappings/req-to-rpc')
+        "devebot-application": path.join(__dirname, '../lib/mappings/req-to-rpc')
       },
       static: {
         'apidoc': path.join(__dirname, '../public/apidoc'),

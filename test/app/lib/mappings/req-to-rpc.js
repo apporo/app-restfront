@@ -48,6 +48,7 @@ var mappings = {
           if (data && data.number >= 49) {
             return {
               valid: false,
+              errorName: 'MaximumExceeding',
               errors: [
                 'Maximum input number exceeded'
               ]

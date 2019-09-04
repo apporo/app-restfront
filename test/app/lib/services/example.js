@@ -10,7 +10,11 @@ var Service = function(params) {
 
   var L = params.loggingFactory.getLogger();
   var T = params.loggingFactory.getTracer();
-  var blockRef = chores.getBlockRef(__filename, params.packageName || 'application');
+  var blockRef = chores.getBlockRef(__filename, params.packageName);
+
+  var errorBuilder = params.errorManager.register(params.packageName, {
+    errorCodes: params.sandboxConfig.errorCodes
+  });
 
   this.fibonacci = function(data, opts) {
     opts = opts || {};
@@ -38,5 +42,9 @@ var Service = function(params) {
     return result;
   }
 };
+
+Service.referenceHash = {
+  errorManager: 'app-errorlist/manager'
+}
 
 module.exports = Service;
