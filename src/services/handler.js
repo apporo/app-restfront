@@ -143,16 +143,24 @@ function upgradeMappings(mappings = []) {
 function upgradeMapping(mapping = {}) {
   // input ~ transformRequest
   mapping.input = mapping.input || {};
+  if (!lodash.isFunction(mapping.input.preValidator)) {
+    delete mapping.input.preValidator;
+  }
   if (!lodash.isFunction(mapping.input.transform)) {
+    delete mapping.input.transform;
     if (lodash.isFunction(mapping.transformRequest)) {
       mapping.input.transform = mapping.transformRequest;
       delete mapping.transformRequest;
     }
   }
+  if (!lodash.isFunction(mapping.input.postValidator)) {
+    delete mapping.input.postValidator;
+  }
   mapping.input.mutate = mapping.input.mutate || {};
   // output ~ transformResponse
   mapping.output = mapping.output || {};
   if (!lodash.isFunction(mapping.output.transform)) {
+    delete mapping.output.transform;
     if (lodash.isFunction(mapping.transformResponse)) {
       mapping.output.transform = mapping.transformResponse;
       delete mapping.transformResponse;
@@ -162,6 +170,7 @@ function upgradeMapping(mapping = {}) {
   // error ~ transformError
   mapping.error = mapping.error || {};
   if (!lodash.isFunction(mapping.error.transform)) {
+    delete mapping.error.transform;
     if (lodash.isFunction(mapping.transformError)) {
       mapping.error.transform = mapping.transformError;
       delete mapping.transformError;
@@ -220,26 +229,26 @@ function buildMiddlewareFromMapping(context, mapping) {
       }));
     }
 
-    if (lodash.isFunction(mapping.input.preValidator)) {
+    if (mapping.input.enabled !== false && mapping.input.preValidator) {
       promize = promize.then(function () {
         return applyValidator(mapping.input.preValidator, 'RequestPreValidationError', req, reqOpts, services);
       });
     }
 
     promize = promize.then(function () {
-      if (mapping.input && mapping.input.transform) {
+      if (mapping.input.enabled !== false && mapping.input.transform) {
         return mapping.input.transform(req, reqOpts, services);
       }
       return req.body;
     });
 
-    if (mapping.input.mutate.rename) {
+    if (mapping.input.enabled !== false && mapping.input.mutate.rename) {
       promize = promize.then(function (reqData) {
         return mutateRenameFields(reqData, mapping.input.mutate.rename);
       })
     }
 
-    if (lodash.isFunction(mapping.input.postValidator)) {
+    if (mapping.input.enabled !== false && mapping.input.postValidator) {
       promize = promize.then(function (reqData) {
         return applyValidator(mapping.input.postValidator, 'RequestPostValidationError', reqData, reqOpts, services);
       });
@@ -251,7 +260,7 @@ function buildMiddlewareFromMapping(context, mapping) {
 
     promize = promize.then(function (result) {
       let packet;
-      if (mapping.output && lodash.isFunction(mapping.output.transform)) {
+      if (mapping.output.enabled !== false && mapping.output.transform) {
         packet = mapping.output.transform(result, req, reqOpts, services);
         if (lodash.isEmpty(packet) || !("body" in packet)) {
           packet = { body: packet };
@@ -261,7 +270,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       }
       packet = addDefaultHeaders(packet, sandboxConfig.responseOptions);
       // rename the fields
-      if (mapping.output.mutate.rename) {
+      if (mapping.output.enabled !== false && mapping.output.mutate.rename) {
         packet = mutateRenameFields(packet, mapping.output.mutate.rename);
       }
       // Render the packet
@@ -327,7 +336,7 @@ function buildMiddlewareFromMapping(context, mapping) {
         }
       }
       // rename the fields
-      if (mapping.error.mutate.rename) {
+      if (mapping.error.enabled !== false && mapping.error.mutate.rename) {
         packet = mutateRenameFields(packet, mapping.error.mutate.rename);
       }
       // Render the packet

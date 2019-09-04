@@ -14,14 +14,14 @@ var mappings = {
       input: {
         preValidator: function (req, reqOpts, services) {
           var demoAction = req.get('X-Demo-Action');
+          var L = services.logger;
+          var T = services.tracer;
+          L.has('debug') && L.log('debug', T.add({
+            demoAction, requestId: reqOpts.requestId
+          }).toMessage({
+            tmpl: 'preValidator[${requestId}] the demoAction: [${demoAction}] has been captured'
+          }));
           if (demoAction === 'pre-validation-failed') {
-            var L = services.logger;
-            var T = services.tracer;
-            L.has('debug') && L.log('debug', T.add({
-              demoAction, requestId: reqOpts.requestId
-            }).toMessage({
-              tmpl: 'Req[${requestId}] the demoAction: [${demoAction}] has been captured'
-            }));
             return {
               valid: false,
               errors: { demoAction }
@@ -30,9 +30,29 @@ var mappings = {
           return true;
         },
         transform: function (req, reqOpts, services) {
+          var L = services.logger;
+          var T = services.tracer;
+          L.has('debug') && L.log('debug', T.add({
+            requestId: reqOpts.requestId
+          }).toMessage({
+            tmpl: 'transform[${requestId}] the request is transforming'
+          }));
           return { number: req.params.number }
         },
         postValidator: function (data, reqOpts, services) {
+          var L = services.logger;
+          var T = services.tracer;
+          L.has('debug') && L.log('debug', T.add(reqOpts).toMessage({
+            tmpl: 'postValidator[${requestId}] is invoked'
+          }));
+          if (data && data.number >= 49) {
+            return {
+              valid: false,
+              errors: [
+                'Maximum input number exceeded'
+              ]
+            }
+          }
           return true;
         },
         jsonschema: {}
