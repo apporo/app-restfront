@@ -12,10 +12,27 @@ var mappings = {
         }
       },
       input: {
-        transform: function (req) {
+        preValidator: function (req, reqOpts, services) {
+          var demoAction = req.get('X-Demo-Action');
+          if (demoAction === 'pre-validation-failed') {
+            var L = services.logger;
+            var T = services.tracer;
+            L.has('debug') && L.log('debug', T.add({
+              demoAction, requestId: reqOpts.requestId
+            }).toMessage({
+              tmpl: 'Req[${requestId}] the demoAction: [${demoAction}] has been captured'
+            }));
+            return {
+              valid: false,
+              errors: { demoAction }
+            }
+          }
+          return true;
+        },
+        transform: function (req, reqOpts, services) {
           return { number: req.params.number }
         },
-        validate: function () {
+        postValidator: function (data, reqOpts, services) {
           return true;
         },
         jsonschema: {}

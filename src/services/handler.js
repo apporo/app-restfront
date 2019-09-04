@@ -10,7 +10,7 @@ const path = require('path');
 
 function Handler(params = {}) {
   const { loggingFactory, packageName, sandboxConfig } = params;
-  const { sandboxRegistry, errorManager, tracelogService, mappingLoader } = params;
+  const { sandboxRegistry, errorManager, tracelogService, mappingLoader, schemaValidator } = params;
   const L = loggingFactory.getLogger();
   const T = loggingFactory.getTracer();
 
@@ -36,7 +36,7 @@ function Handler(params = {}) {
     errorCodes: sandboxConfig.errorCodes
   });
 
-  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig };
+  const CTX = { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator };
 
   this.validator = function (express) {
     const router = express.Router();
@@ -83,6 +83,7 @@ Handler.referenceHash = {
   errorManager: "app-errorlist/manager",
   mappingLoader: "devebot/mappingLoader",
   sandboxRegistry: "devebot/sandboxRegistry",
+  schemaValidator: "devebot/schemaValidator",
   tracelogService: "app-tracelog/tracelogService"
 };
 
@@ -172,7 +173,7 @@ function upgradeMapping(mapping = {}) {
 }
 
 function buildMiddlewareFromMapping(context, mapping) {
-  const { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig } = context;
+  const { L, T, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator } = context;
 
   const timeout = mapping.timeout || sandboxConfig.defaultTimeout;
 
@@ -180,6 +181,8 @@ function buildMiddlewareFromMapping(context, mapping) {
   const refMethod = ref && ref.method;
 
   const requestOptions = lodash.merge({}, sandboxConfig.requestOptions, mapping.requestOptions);
+
+  const services = { logger: L, tracer: T, errorBuilder, schemaValidator };
 
   return function (req, res, next) {
     if (req.method !== mapping.method) return next();
@@ -217,9 +220,15 @@ function buildMiddlewareFromMapping(context, mapping) {
       }));
     }
 
+    if (lodash.isFunction(mapping.input.preValidator)) {
+      promize = promize.then(function () {
+        return applyValidator(mapping.input.preValidator, 'RequestPreValidationError', req, reqOpts, services);
+      });
+    }
+
     promize = promize.then(function () {
       if (mapping.input && mapping.input.transform) {
-        return mapping.input.transform(req, reqOpts);
+        return mapping.input.transform(req, reqOpts, services);
       }
       return req.body;
     });
@@ -230,6 +239,12 @@ function buildMiddlewareFromMapping(context, mapping) {
       })
     }
 
+    if (lodash.isFunction(mapping.input.postValidator)) {
+      promize = promize.then(function (reqData) {
+        return applyValidator(mapping.input.postValidator, 'RequestPostValidationError', reqData, reqOpts, services);
+      });
+    }
+
     promize = promize.then(function (reqData) {
       return refMethod(reqData, reqOpts);
     });
@@ -237,7 +252,7 @@ function buildMiddlewareFromMapping(context, mapping) {
     promize = promize.then(function (result) {
       let packet;
       if (mapping.output && lodash.isFunction(mapping.output.transform)) {
-        packet = mapping.output.transform(result, req, reqOpts);
+        packet = mapping.output.transform(result, req, reqOpts, services);
         if (lodash.isEmpty(packet) || !("body" in packet)) {
           packet = { body: packet };
         }
@@ -274,7 +289,7 @@ function buildMiddlewareFromMapping(context, mapping) {
       let packet = {};
       // transform error object to packet
       if (mapping.error && lodash.isFunction(mapping.error.transform)) {
-        packet = mapping.error.transform(failed, req, reqOpts);
+        packet = mapping.error.transform(failed, req, reqOpts, services);
         packet = packet || {};
         packet.body = packet.body || {
           message: "mapping.error.transform() output don't have body field"
@@ -342,6 +357,25 @@ function mutateRenameFields (obj, nameMappings) {
     }
   }
   return obj;
+}
+
+function applyValidator (validator, defaultErrorCode, reqData, reqOpts, services) {
+  const { errorBuilder } = services;
+  return Promise.resolve(validator(reqData, reqOpts, services))
+  .then(function (result) {
+    if (!isPureObject(result)) {
+      result = { valid: result }
+    }
+    if (result.valid === false) {
+      const errorCode = result.errorCode || defaultErrorCode;
+      return Promise.reject(errorBuilder.newError(errorCode, {
+        payload: {
+          errors: result.errors
+        }
+      }));
+    }
+    return reqData;
+  });
 }
 
 function addDefaultHeaders (packet, responseOptions) {

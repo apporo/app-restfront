@@ -57,6 +57,16 @@ module.exports = {
           returnCode: 101,
           statusCode: 408
         },
+        RequestPreValidationError: {
+          message: 'The http request is invalid',
+          returnCode: 102,
+          statusCode: 400
+        },
+        RequestPostValidationError: {
+          message: 'The sanitized body is invalid',
+          returnCode: 103,
+          statusCode: 400
+        },
       },
       mappingStore: require('path').join(__dirname, '../lib/mappings')
     }
