@@ -12,10 +12,22 @@ module.exports = {
         returnCode: 1001,
         statusCode: 400
       },
+      InvalidInputNumber: {
+        message: 'Invalid input number',
+        returnCode: 1009,
+        statusCode: 400
+      },
       MaximumExceeding: {
         message: 'Maximum input number exceeded',
         returnCode: 1002,
         statusCode: 400
+      },
+    },
+    otherErrorSource: {
+      MaximumExceeding: {
+        message: 'Maximum input number exceeded',
+        returnCode: 2002,
+        statusCode: 500
       },
     }
   },

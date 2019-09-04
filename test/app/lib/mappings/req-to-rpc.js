@@ -11,6 +11,7 @@ var mappings = {
           required: true
         }
       },
+      errorSource: 'otherErrorSource',
       input: {
         preValidator: function (req, reqOpts, services) {
           var demoAction = req.get('X-Demo-Action');

@@ -12,8 +12,12 @@ var Service = function(params) {
   var T = params.loggingFactory.getTracer();
   var blockRef = chores.getBlockRef(__filename, params.packageName);
 
-  var errorBuilder = params.errorManager.register(params.packageName, {
+  params.errorManager.register(params.packageName, {
     errorCodes: params.sandboxConfig.errorCodes
+  });
+
+  params.errorManager.register('otherErrorSource', {
+    errorCodes: params.sandboxConfig.otherErrorSource
   });
 
   this.fibonacci = function(data, opts) {

@@ -94,7 +94,8 @@ function joinMappings (mappingHash, mappings = []) {
     const list = mappingBundle.apiMaps;
     if (lodash.isArray(list)) {
       mappings.push.apply(mappings, lodash.map(list, function(item) {
-        return lodash.assign(item, { packageName: mappingName });
+        item.errorSource = item.errorSource || mappingName;
+        return item;
       }));
     }
   });
@@ -193,7 +194,7 @@ function buildMiddlewareFromMapping(context, mapping) {
 
   const requestOptions = lodash.merge({}, sandboxConfig.requestOptions, mapping.requestOptions);
 
-  const mappingErrorBuilder = errorManager.getErrorBuilder(mapping.packageName) || errorBuilder;
+  const mappingErrorBuilder = errorManager.getErrorBuilder(mapping.errorSource) || errorBuilder;
 
   const BusinessError = errorManager.BusinessError;
 
