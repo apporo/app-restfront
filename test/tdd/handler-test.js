@@ -186,7 +186,7 @@ describe('handler', function() {
     it('change the field names based on the namingMappings properly');
   });
 
-  describe('extractReqOpts()', function() {
+  describe('extractRequestOptions()', function() {
     var STANDARD_REQ_OPTIONS = [
       "requestId",
       "segmentId",
@@ -200,7 +200,7 @@ describe('handler', function() {
       "mockSuite",
       "mockState",
     ];
-    var Handler, extractReqOpts;
+    var Handler, extractRequestOptions;
 
     var req = new RequestMock({
       headers: {
@@ -214,11 +214,11 @@ describe('handler', function() {
 
     beforeEach(function() {
       Handler = mockit.acquire('handler');
-      extractReqOpts = mockit.get(Handler, 'extractReqOpts');
+      extractRequestOptions = mockit.get(Handler, 'extractRequestOptions');
     });
 
     it('extract the predefined headers properly', function() {
-      var output = extractReqOpts(req, sandboxConfig.requestOptions);
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions);
       var expected = {
         "requestId": "52160bbb-cac5-405f-a1e9-a55323b17938",
         "clientType": "agent",
@@ -231,7 +231,7 @@ describe('handler', function() {
     });
 
     it('the headers will be overridden by extensions', function() {
-      var output = extractReqOpts(req, sandboxConfig.requestOptions, {
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions, {
         extensions: {
           requestId: "7f36af79-077b-448e-9c66-fc177996fd10",
           timeout: 1000
@@ -257,7 +257,7 @@ describe('handler', function() {
           'User-Agent': null
         }
       });
-      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "os": {
           "name": undefined,
@@ -273,7 +273,7 @@ describe('handler', function() {
           'User-Agent': 'Any string, wrong format'
         }
       });
-      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "os": {
           "name": undefined,
@@ -289,7 +289,7 @@ describe('handler', function() {
           'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.2 (KHTML, like Gecko) Ubuntu/11.10 Chromium/15.0.874.106 Chrome/15.0.874.106 Safari/535.2',
         }
       });
-      var output = extractReqOpts(req, sandboxConfig.requestOptions, config);
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions, config);
       assert.deepInclude(output.userAgent, {
         "browser": {
           "name": "Chromium",

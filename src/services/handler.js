@@ -222,7 +222,7 @@ function buildMiddlewareFromMapping(context, mapping) {
     }
 
     const failedReqOpts = [];
-    const reqOpts = extractReqOpts(req, requestOptions, {
+    const reqOpts = extractRequestOptions(req, requestOptions, {
       userAgentEnabled: sandboxConfig.userAgentEnabled,
       extensions: { requestId, timeout }
     }, failedReqOpts);
@@ -497,7 +497,7 @@ function transformScalarError (error, responseOptions = {}, packet = {}) {
   return packet;
 }
 
-function extractReqOpts (req, requestOptions, opts = {}, errors) {
+function extractRequestOptions (req, requestOptions, opts = {}, errors) {
   const result = {};
 
   for (const optionKey in requestOptions) {
