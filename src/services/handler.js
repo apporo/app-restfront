@@ -307,24 +307,60 @@ function buildMiddlewareFromMapping(context, mapping) {
       }));
     });
 
-    promize = promize.catch(function (failed) {
-      let packet = {};
-      // transform error object to packet
-      if (mapping.error.enabled !== false && mapping.error.transform) {
-        packet = mapping.error.transform(failed, req, reqOpts, services);
-        packet = packet || {};
-        packet.body = packet.body || {
-          message: "mapping.error.transform() output don't have body field"
-        }
-      } else {
-        if (failed instanceof Error) {
-          packet = transformErrorObject(failed, sandboxConfig.responseOptions);
-          if (chores.isDevelopmentMode()) {
-            packet.body.stack = lodash.split(failed.stack, "\n");
+    if (chores.isUpgradeSupported('app-restfront-legacy-error-to-response')) {
+      promize = promize.catch(function (failed) {
+        let packet = {};
+        // transform error object to packet
+        if (mapping.error.enabled !== false && mapping.error.transform) {
+          packet = mapping.error.transform(failed, req, reqOpts, services);
+          packet = packet || {};
+          packet.body = packet.body || {
+            message: "mapping.error.transform() output don't have body field"
           }
         } else {
-          packet = transformScalarError(failed, packet);
+          if (failed instanceof Error) {
+            packet = transformErrorObject(failed, sandboxConfig.responseOptions);
+            if (chores.isDevelopmentMode()) {
+              packet.body.stack = lodash.split(failed.stack, "\n");
+            }
+          } else {
+            packet = transformScalarError(failed, sandboxConfig.responseOptions, packet);
+          }
         }
+        // rename the fields
+        if (mapping.error.enabled !== false && mapping.error.mutate.rename) {
+          packet = mutateRenameFields(packet, mapping.error.mutate.rename);
+        }
+        // Render the packet
+        renderPacketToResponse(packet, res.status(packet.statusCode || 500));
+        L.has('error') && L.log('error', reqTR.add(packet).toMessage({
+          text: 'Req[${requestId}] has failed, status[${statusCode}], headers: ${headers}, body: ${body}'
+        }));
+      });
+
+      promize.finally(function () {
+        L.has('silly') && L.log('silly', reqTR.toMessage({
+          text: 'Req[${requestId}] end'
+        }));
+      });
+
+      return;
+    }
+
+    promize = promize.catch(function (failed) {
+      let packet = {};
+      // apply the explicit transform function
+      if (mapping.error.enabled !== false && mapping.error.transform) {
+        failed = mapping.error.transform(failed, req, reqOpts, services);
+      }
+      // transform error object to packet
+      if (failed instanceof Error) {
+        packet = transformErrorObject(failed, sandboxConfig.responseOptions);
+        if (chores.isDevelopmentMode()) {
+          packet.body.stack = lodash.split(failed.stack, "\n");
+        }
+      } else {
+        packet = transformScalarError(failed, sandboxConfig.responseOptions, packet);
       }
       // rename the fields
       if (mapping.error.enabled !== false && mapping.error.mutate.rename) {
@@ -392,28 +428,39 @@ function addDefaultHeaders (packet, responseOptions) {
   return packet;
 }
 
-function transformErrorObject (err, responseOptions) {
-  const output = {
-    statusCode: err.statusCode || 500,
-    headers: {},
-    body: {
-      name: err.name,
-      message: err.message
-    }
-  };
+function transformResponseOptions (error, responseOptions = {}, packet = {}) {
+  packet.headers = packet.headers || {};
   lodash.forOwn(responseOptions, function(resOpt = {}, optionName) {
-    if (optionName in err && lodash.isString(resOpt.headerName)) {
-      output.headers[resOpt.headerName] = err[optionName];
+    if (optionName in error && lodash.isString(resOpt.headerName)) {
+      packet.headers[resOpt.headerName] = error[optionName];
     }
   });
-  if (lodash.isObject(err.payload)) {
-    output.body.payload = err.payload;
-  }
-  return output;
+  return packet;
 }
 
-function transformScalarError (error, packet = {}) {
-  if (error == null) {
+function transformErrorObject (error, responseOptions) {
+  // statusCode, headers, body
+  let packet = {
+    statusCode: error.statusCode || 500,
+    headers: {},
+    body: {
+      name: error.name,
+      message: error.message
+    }
+  };
+  // responseOptions keys: X-Package-Ref & X-Return-Code
+  packet = transformResponseOptions(error, responseOptions, packet);
+  // payload
+  if (lodash.isObject(error.payload)) {
+    packet.body.payload = error.payload;
+  }
+  return packet;
+}
+
+const ERROR_FIELDS = [ 'statusCode', 'headers', 'body' ];
+
+function transformScalarError (error, responseOptions = {}, packet = {}) {
+  if (error === null) {
     packet.body = {
       type: 'null',
       message: 'Error is null'
@@ -429,22 +476,24 @@ function transformScalarError (error, packet = {}) {
       payload: error
     }
   } else if (lodash.isObject(error)) {
-    if ('body' in error) {
-      packet = error;
-    } else {
-      packet.body = {
-        type: 'object',
-        payload: error
-      }
+    lodash.assign(packet, lodash.pick(error, ERROR_FIELDS));
+    if (lodash.isNil(packet.body)) {
+      packet.body = lodash.omit(error, ERROR_FIELDS.concat(lodash.keys(responseOptions)));
     }
+    packet = transformResponseOptions(error, responseOptions, packet);
   } else {
     packet.body = {
       type: (typeof error),
       message: 'Error: ' + error,
-      data: error
+      payload: error
     }
   }
   packet.statusCode = packet.statusCode || 500;
+  packet.headers = packet.headers || {};
+  const returnCodeName = lodash.get(responseOptions, 'returnCode.headerName', 'X-Return-Code');
+  if (!(returnCodeName in packet.headers)) {
+    packet.headers[returnCodeName] = -1;
+  }
   return packet;
 }
 

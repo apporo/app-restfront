@@ -3,7 +3,7 @@
 var devebot = require('devebot');
 var lodash = devebot.require('lodash');
 var assert = require('liberica').assert;
-var dtk = require('liberica').mockit;
+var mockit = require('liberica').mockit;
 var sinon = require('liberica').sinon;
 var path = require('path');
 
@@ -12,18 +12,18 @@ describe('handler', function() {
   var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
 
   describe('sanitizeMappings()', function() {
-    var loggingFactory = dtk.createLoggingFactoryMock({ captureMethodCall: false });
+    var loggingFactory = mockit.createLoggingFactoryMock({ captureMethodCall: false });
     var ctx = {
       L: loggingFactory.getLogger(),
       T: loggingFactory.getTracer(),
-      blockRef: 'app-restfront',
+      blockRef: 'app-restfront/handler',
     }
 
     var Handler, sanitizeMappings;
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      sanitizeMappings = dtk.get(Handler, 'sanitizeMappings');
+      Handler = mockit.acquire('handler');
+      sanitizeMappings = mockit.get(Handler, 'sanitizeMappings');
     });
 
     it('push the sanitized mappings into the provided collections', function() {
@@ -173,8 +173,8 @@ describe('handler', function() {
     var Handler, mutateRenameFields;
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      mutateRenameFields = dtk.get(Handler, 'mutateRenameFields');
+      Handler = mockit.acquire('handler');
+      mutateRenameFields = mockit.get(Handler, 'mutateRenameFields');
     });
 
     it('do nothing if nameMappings is undefined', function() {
@@ -213,8 +213,8 @@ describe('handler', function() {
     });
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      extractReqOpts = dtk.get(Handler, 'extractReqOpts');
+      Handler = mockit.acquire('handler');
+      extractReqOpts = mockit.get(Handler, 'extractReqOpts');
     });
 
     it('extract the predefined headers properly', function() {
@@ -315,8 +315,8 @@ describe('handler', function() {
     var Handler, addDefaultHeaders;
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      addDefaultHeaders = dtk.get(Handler, 'addDefaultHeaders');
+      Handler = mockit.acquire('handler');
+      addDefaultHeaders = mockit.get(Handler, 'addDefaultHeaders');
     });
 
     it('add the default header to the packet', function() {
@@ -361,8 +361,8 @@ describe('handler', function() {
     var Handler, renderPacketToResponse;
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      renderPacketToResponse = dtk.get(Handler, 'renderPacketToResponse');
+      Handler = mockit.acquire('handler');
+      renderPacketToResponse = mockit.get(Handler, 'renderPacketToResponse');
     });
 
     it('render empty packet', function() {
@@ -417,8 +417,8 @@ describe('handler', function() {
     var Handler, buildMiddlewareFromMapping;
 
     beforeEach(function() {
-      Handler = dtk.acquire('handler');
-      buildMiddlewareFromMapping = dtk.get(Handler, 'buildMiddlewareFromMapping');
+      Handler = mockit.acquire('handler');
+      buildMiddlewareFromMapping = mockit.get(Handler, 'buildMiddlewareFromMapping');
     });
 
     it('[ok]');
@@ -432,6 +432,146 @@ describe('handler', function() {
     it('predefined error [error]');
 
     it('undefined error [error]');
+  });
+
+  describe('transformScalarError()', function() {
+    var loggingFactory = mockit.createLoggingFactoryMock({ captureMethodCall: false });
+    var ctx = {
+      L: loggingFactory.getLogger(),
+      T: loggingFactory.getTracer(),
+      blockRef: 'app-restfront/handler',
+    }
+
+    var Handler, transformScalarError;
+
+    beforeEach(function() {
+      Handler = mockit.acquire('handler');
+      transformScalarError = mockit.get(Handler, 'transformScalarError');
+    });
+
+    it('error is null', function() {
+      assert.deepEqual(transformScalarError(null), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          type: 'null',
+          message: 'Error is null'
+        }
+      });
+    });
+
+    it('error is undefined', function() {
+      assert.deepEqual(transformScalarError(), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          type: 'undefined',
+          message: 'Error: undefined',
+          payload: undefined
+        }
+      });
+    });
+
+    it('error is a boolean value', function() {
+      assert.deepEqual(transformScalarError(true), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          type: 'boolean',
+          message: 'Error: true',
+          payload: true
+        }
+      });
+    });
+
+    it('error is a string', function() {
+      assert.deepEqual(transformScalarError('This is an error'), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          type: 'string',
+          message: 'This is an error'
+        }
+      });
+    });
+
+    it('error is an array', function() {
+      var err = new Error('Failed');
+      assert.deepEqual(transformScalarError([ 'Error', err ]), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          type: 'array',
+          payload: [
+            'Error', err
+          ]
+        }
+      });
+    });
+
+    it('error is an empty object', function() {
+      assert.deepEqual(transformScalarError({}), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {}
+      });
+    });
+
+    it('error is an unstructured object', function() {
+      assert.deepEqual(transformScalarError({
+        abc: 'Hello world',
+        xyz: 1024
+      }), {
+        statusCode: 500,
+        headers: {
+          'X-Return-Code': -1,
+        },
+        body: {
+          abc: 'Hello world',
+          xyz: 1024
+        }
+      });
+    });
+
+    it('error is a structured object', function() {
+      assert.deepEqual(transformScalarError({
+        statusCode: 400,
+        returnCode: 1001,
+        headers: {
+          'ContentType': 'application/json',
+        },
+        body: {
+          message: 'Hello world',
+          payload: {
+            price: 12000
+          }
+        }
+      }, sandboxConfig.responseOptions), {
+        statusCode: 400,
+        headers: {
+          'ContentType': 'application/json',
+          'X-Return-Code': 1001,
+        },
+        body: {
+          message: 'Hello world',
+          payload: {
+            price: 12000
+          }
+        }
+      });
+    });
   });
 });
 
