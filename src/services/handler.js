@@ -310,7 +310,7 @@ function buildMiddlewareFromMapping(context, mapping) {
     promize = promize.catch(function (failed) {
       let packet = {};
       // transform error object to packet
-      if (mapping.error && lodash.isFunction(mapping.error.transform)) {
+      if (mapping.error.enabled !== false && mapping.error.transform) {
         packet = mapping.error.transform(failed, req, reqOpts, services);
         packet = packet || {};
         packet.body = packet.body || {
@@ -318,34 +318,12 @@ function buildMiddlewareFromMapping(context, mapping) {
         }
       } else {
         if (failed instanceof Error) {
-          packet = transformErrorDefault(failed, sandboxConfig.responseOptions);
+          packet = transformErrorObject(failed, sandboxConfig.responseOptions);
           if (chores.isDevelopmentMode()) {
             packet.body.stack = lodash.split(failed.stack, "\n");
           }
         } else {
-          if (failed == null) {
-            packet.body = {
-              type: 'null',
-              message: 'Error is null'
-            }
-          } else if (lodash.isString(failed)) {
-            packet.body = {
-              type: 'string',
-              message: failed
-            }
-          } else if (lodash.isObject(failed)) {
-            packet.body = {
-              type: 'object',
-              message: 'Error: ' + JSON.stringify(failed),
-              data: failed
-            }
-          } else {
-            packet.body = {
-              type: (typeof failed),
-              message: 'Error: ' + failed,
-              data: failed
-            }
-          }
+          packet = transformScalarError(failed, packet);
         }
       }
       // rename the fields
@@ -414,7 +392,7 @@ function addDefaultHeaders (packet, responseOptions) {
   return packet;
 }
 
-function transformErrorDefault (err, responseOptions) {
+function transformErrorObject (err, responseOptions) {
   const output = {
     statusCode: err.statusCode || 500,
     headers: {},
@@ -432,6 +410,42 @@ function transformErrorDefault (err, responseOptions) {
     output.body.payload = err.payload;
   }
   return output;
+}
+
+function transformScalarError (error, packet = {}) {
+  if (error == null) {
+    packet.body = {
+      type: 'null',
+      message: 'Error is null'
+    }
+  } else if (lodash.isString(error)) {
+    packet.body = {
+      type: 'string',
+      message: error
+    }
+  } else if (lodash.isArray(error)) {
+    packet.body = {
+      type: 'array',
+      payload: error
+    }
+  } else if (lodash.isObject(error)) {
+    if ('body' in error) {
+      packet = error;
+    } else {
+      packet.body = {
+        type: 'object',
+        payload: error
+      }
+    }
+  } else {
+    packet.body = {
+      type: (typeof error),
+      message: 'Error: ' + error,
+      data: error
+    }
+  }
+  packet.statusCode = packet.statusCode || 500;
+  return packet;
 }
 
 function extractReqOpts (req, requestOptions, opts = {}, errors) {
