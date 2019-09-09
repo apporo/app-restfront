@@ -8,7 +8,7 @@ var sinon = require('liberica').sinon;
 var path = require('path');
 
 describe('handler', function() {
-  var app = require(path.join(__dirname, '../app'));
+  var app = require(path.join(__dirname, '../app/example'));
   var sandboxConfig = lodash.get(app.config, ['sandbox', 'default', 'plugins', 'appRestfront']);
 
   describe('sanitizeMappings()', function() {

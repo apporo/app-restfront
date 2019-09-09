@@ -68,7 +68,7 @@ module.exports = {
           statusCode: 400
         },
       },
-      mappingStore: require('path').join(__dirname, '../lib/mappings')
+      mappingStore: {}
     }
   }
 };

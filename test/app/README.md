@@ -19,18 +19,18 @@ Start the example server:
 
 ```shell
 export DEVEBOT_SANDBOX=old-mappings
-npm run clean && npm run build && node test/app
+npm run clean && npm run build && node test/app/example
 ```
 
 ```shell
 export DEVEBOT_SANDBOX=new-mappings
-npm run clean && npm run build && node test/app
+npm run clean && npm run build && node test/app/example
 ```
 
 or start the example server with mocking functions:
 
 ```shell
-DEVEBOT_TEXTURE=mock node test/app
+DEVEBOT_TEXTURE=mock node test/app/example
 ```
 
 ```shell

@@ -160,6 +160,11 @@ function upgradeMapping(mapping = {}) {
     delete mapping.input.postValidator;
   }
   mapping.input.mutate = mapping.input.mutate || {};
+  // inlet - manual processing
+  mapping.inlet = mapping.inlet || {};
+  if (!lodash.isFunction(mapping.inlet.process)) {
+    delete mapping.inlet.process;
+  }
   // output ~ transformResponse
   mapping.output = mapping.output || {};
   if (!lodash.isFunction(mapping.output.transform)) {
@@ -267,31 +272,37 @@ function buildMiddlewareFromMapping(context, mapping) {
       });
     }
 
-    promize = promize.then(function (reqData) {
-      return refMethod(reqData, reqOpts);
-    });
+    if (mapping.inlet.process) {
+      promize = promize.then(function (reqData) {
+        return mapping.inlet.process(refMethod, res, reqData, reqOpts, services);
+      });
+    } else {
+      promize = promize.then(function (reqData) {
+        return refMethod(reqData, reqOpts);
+      });
 
-    promize = promize.then(function (result) {
-      let packet;
-      if (mapping.output.enabled !== false && mapping.output.transform) {
-        packet = mapping.output.transform(result, req, reqOpts, services);
-        if (lodash.isEmpty(packet) || !("body" in packet)) {
-          packet = { body: packet };
+      promize = promize.then(function (result) {
+        let packet;
+        if (mapping.output.enabled !== false && mapping.output.transform) {
+          packet = mapping.output.transform(result, req, reqOpts, services);
+          if (lodash.isEmpty(packet) || !("body" in packet)) {
+            packet = { body: packet };
+          }
+        } else {
+          packet = { body: result };
         }
-      } else {
-        packet = { body: result };
-      }
-      packet = addDefaultHeaders(packet, sandboxConfig.responseOptions);
-      // rename the fields
-      if (mapping.output.enabled !== false && mapping.output.mutate.rename) {
-        packet = mutateRenameFields(packet, mapping.output.mutate.rename);
-      }
-      // Render the packet
-      renderPacketToResponse(packet, res);
-      L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
-        text: 'Req[${requestId}] is completed'
-      }));
-    });
+        packet = addDefaultHeaders(packet, sandboxConfig.responseOptions);
+        // rename the fields
+        if (mapping.output.enabled !== false && mapping.output.mutate.rename) {
+          packet = mutateRenameFields(packet, mapping.output.mutate.rename);
+        }
+        // Render the packet
+        renderPacketToResponse(packet, res);
+        L.has('trace') && L.log('trace', reqTR.add(packet).toMessage({
+          text: 'Req[${requestId}] is completed'
+        }));
+      });
+    }
 
     promize = promize.catch(Promise.TimeoutError, function() {
       L.has('error') && L.log('error', reqTR.add({
