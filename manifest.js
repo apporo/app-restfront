@@ -5,10 +5,12 @@ module.exports = {
         "type": "object",
         "properties": {
           "contextPath": {
-            "type": "string"
+            "type": "string",
+            "description": "The base path for all of urls (Including mapping-urls and static resource urls)"
           },
           "apiPath": {
-            "type": "string"
+            "type": "string",
+            "description": "Relative path for the urls of the APIs"
           },
           "serviceResolver": {
             "type": "string"
