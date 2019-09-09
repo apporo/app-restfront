@@ -531,7 +531,9 @@ function extractRequestOptions (req, requestOptions, opts = {}, errors) {
   }
 
   for (const key in opts.extensions) {
-    result[key] = opts.extensions[key];
+    if (opts.extensions[key] !== undefined) {
+      result[key] = opts.extensions[key];
+    }
   }
 
   return result;

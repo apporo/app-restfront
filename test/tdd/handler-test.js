@@ -65,6 +65,7 @@ describe('handler', function() {
               "input": {
                 "mutate": {}
               },
+              "inlet": {},
               "output": {
                 "mutate": {}
               },
@@ -80,6 +81,7 @@ describe('handler', function() {
               "input": {
                 "mutate": {}
               },
+              "inlet": {},
               "output": {
                 "mutate": {}
               },
@@ -97,6 +99,7 @@ describe('handler', function() {
               "input": {
                 "mutate": {}
               },
+              "inlet": {},
               "output": {
                 "mutate": {}
               },
@@ -112,6 +115,7 @@ describe('handler', function() {
               "input": {
                 "mutate": {}
               },
+              "inlet": {},
               "output": {
                 "mutate": {}
               },
@@ -239,6 +243,25 @@ describe('handler', function() {
       });
       var expected = {
         "requestId": "7f36af79-077b-448e-9c66-fc177996fd10",
+        "clientType": "agent",
+        "clientVersion": "0.1.0",
+        "appTierType": "UAT",
+        "appUserType": "DEMO",
+        "timeout": 1000
+      };
+      assert.deepInclude(output, expected);
+      assert.sameMembers(lodash.keys(output), STANDARD_REQ_OPTIONS.concat([ "timeout" ]));
+    });
+
+    it('the request-options will be overridden by defined extensions only', function() {
+      var output = extractRequestOptions(req, sandboxConfig.requestOptions, {
+        extensions: {
+          requestId: undefined,
+          timeout: 1000
+        }
+      });
+      var expected = {
+        "requestId": "52160bbb-cac5-405f-a1e9-a55323b17938",
         "clientType": "agent",
         "clientVersion": "0.1.0",
         "appTierType": "UAT",
