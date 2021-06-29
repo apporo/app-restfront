@@ -1,0 +1,5 @@
+name: app-restfront
+title: "Devebot Plugin: Restfront"
+version: master
+nav:
+- modules/ROOT/nav.adoc

@@ -612,6 +612,7 @@ function RequestMock (defs = {}) {
 
 function ResponseMock (defs = {}) {
   this.set = sinon.stub();
+  this.status = sinon.stub();
   this.text = sinon.stub();
   this.json = sinon.stub();
   this.end = sinon.stub();

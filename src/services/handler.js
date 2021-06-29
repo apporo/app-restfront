@@ -43,7 +43,9 @@ function Handler(params = {}) {
     lodash.forEach(mappings, function (mapping) {
       if (mapping.validatorSchema) {
         router.all(mapping.path, function (req, res, next) {
-          if (req.method !== mapping.method) return next();
+          if (!isMethodIncluded(mapping.method, req.method)) {
+            return next();
+          }
           const requestId = tracelogService.getRequestId(req);
           const reqTR = T.branch({ key: 'requestId', value: requestId });
           L.has('info') && L.log('info', reqTR.add({
@@ -189,6 +191,23 @@ function upgradeMapping(mapping = {}) {
   return mapping;
 }
 
+function isMethodIncluded(methods, reqMethod) {
+  if (reqMethod && lodash.isString(reqMethod)) {
+    reqMethod = reqMethod.toUpperCase();
+    if (methods) {
+      if (lodash.isString(methods)) {
+        return reqMethod === methods.toUpperCase();
+      }
+      if (lodash.isArray(methods)) {
+        return lodash.some(methods, function(item) {
+          return item && (reqMethod === item.toUpperCase());
+        });
+      }
+    }
+  }
+  return false;
+}
+
 function buildMiddlewareFromMapping(context, mapping) {
   const { L, T, errorManager, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator } = context;
 
@@ -206,7 +225,9 @@ function buildMiddlewareFromMapping(context, mapping) {
   const services = { logger: L, tracer: T, BusinessError, errorBuilder: mappingErrorBuilder, schemaValidator };
 
   return function (req, res, next) {
-    if (req.method !== mapping.method) return next();
+    if (!isMethodIncluded(mapping.method, req.method)) {
+      return next();
+    }
     const requestId = tracelogService.getRequestId(req);
     const reqTR = T.branch({ key: 'requestId', value: requestId });
     L.has('info') && L.log('info', reqTR.add({

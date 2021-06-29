@@ -1,0 +1,28 @@
+= Tổng quan
+
+`Restfront` là một thành phần cắm thêm (plugin) của Devebot Platform.
+Nhiệm vụ chính của `app-restfront` là cho phép developer có thể dễ dàng định nghĩa các Rest API bằng khai báo JSON trong cấu hình (configuration).
+
+Kiến trúc của app-restfront được minh họa theo sơ đồ sau:
+
+image::arch.png[]
+
+Toàn bộ định nghĩa của Rest API trong Restfront được cấu hình trong các tệp `mappings` có định dạng JSON.
+Các khai báo này sẽ cung cấp thông số cho từng điểm vào (entrypoint) của Rest API, bao gồm:
+
+- *path*: Đường dẫn đại diện cho `entrypoint` này;
+- *method*: `HTTP method` (GET, POST, PUT, PATCH, DELETE, ...) tương ứng với entrypoint này;
+- *input*: Khai báo hàm kiểm tra dữ liệu cũng như hàm `transform` để chuyển đổi dữ liệu từ Rest API vào tham số của hàm Javascript;
+- *serviceName*: Tên của service sẽ chứa hàm được mapping;
+- *methodName*: Tên của hàm sẽ được gọi để xử lý Rest request;
+- *output*: Khai báo hàm `transform` để chuyển đổi dữ liệu trả về từ hàm Javascript thành đầu ra cho Rest HTTP response.
+
+Restfront thường được sử dụng trong trường hợp dự án đã có sẵn chức năng đã được lập trình và đóng gói thành thư viện, cung cấp chức năng dưới dạng các hàm của một đối tượng dịch vụ (service) của một Devebot Plugin nào đó.
+Khi đó developer chỉ việc cài đặt thêm Restfront, khai báo cấu hình ánh xạ (mappings) từ Rest API vào các hàm chức năng sẵn có là có luôn một bộ Rest API mở cho các dịch vụ bên ngoài gọi vào.
+
+////
+Có hai giai đoạn trong quá trình sử dụng Restfront: khai báo 
+
+- Khai báo
+
+////
