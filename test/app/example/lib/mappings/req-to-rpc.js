@@ -443,7 +443,7 @@ var mappings = {
             }
         }
     }
-}
+  }
 }
 
 module.exports = mappings;

@@ -217,6 +217,7 @@ function buildMiddlewareFromMapping(context, mapping) {
   const refMethod = ref && ref.method;
 
   const requestOptions = lodash.merge({}, sandboxConfig.requestOptions, mapping.requestOptions);
+  const responseOptions = Object.assign({}, sandboxConfig.responseOptions, mapping.responseOptions);
 
   const mappingErrorBuilder = errorManager.getErrorBuilder(mapping.errorSource) || errorBuilder;
 
@@ -312,7 +313,7 @@ function buildMiddlewareFromMapping(context, mapping) {
         } else {
           packet = { body: result };
         }
-        packet = addDefaultHeaders(packet, sandboxConfig.responseOptions);
+        packet = addDefaultHeaders(packet, responseOptions);
         // rename the fields
         if (mapping.output.enabled !== false && mapping.output.mutate.rename) {
           packet = mutateRenameFields(packet, mapping.output.mutate.rename);
@@ -351,12 +352,12 @@ function buildMiddlewareFromMapping(context, mapping) {
           }
         } else {
           if (failed instanceof Error) {
-            packet = transformErrorObject(failed, sandboxConfig.responseOptions);
+            packet = transformErrorObject(failed, responseOptions);
             if (chores.isDevelopmentMode()) {
               packet.body.stack = lodash.split(failed.stack, "\n");
             }
           } else {
-            packet = transformScalarError(failed, sandboxConfig.responseOptions, packet);
+            packet = transformScalarError(failed, responseOptions, packet);
           }
         }
         // rename the fields
@@ -387,12 +388,12 @@ function buildMiddlewareFromMapping(context, mapping) {
       }
       // transform error object to packet
       if (failed instanceof Error) {
-        packet = transformErrorObject(failed, sandboxConfig.responseOptions);
+        packet = transformErrorObject(failed, responseOptions);
         if (chores.isDevelopmentMode()) {
           packet.body.stack = lodash.split(failed.stack, "\n");
         }
       } else {
-        packet = transformScalarError(failed, sandboxConfig.responseOptions, packet);
+        packet = transformScalarError(failed, responseOptions, packet);
       }
       // rename the fields
       if (mapping.error.enabled !== false && mapping.error.mutate.rename) {
@@ -570,11 +571,12 @@ function renderPacketToResponse_Standard (packet = {}, res) {
       res.set(key, value);
     });
   }
+  res.status(packet.statusCode || 200);
   if (lodash.isNil(packet.body)) {
     res.end();
   } else {
     if (lodash.isString(packet.body)) {
-      res.text(packet.body);
+      res.send(packet.body);
     } else {
       res.json(packet.body);
     }
@@ -593,7 +595,7 @@ function renderPacketToResponse_Optimized (packet = {}, res) {
     res.end();
   } else {
     if (typeof packet.body === 'string') {
-      res.text(packet.body);
+      res.send(packet.body);
     } else {
       res.json(packet.body);
     }
