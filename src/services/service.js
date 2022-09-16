@@ -50,6 +50,7 @@ function Service(params = {}) {
     })
     layerware.push(webweaverService.getSessionLayer([
       webweaverService.getJsonBodyParserLayer(),
+      webweaverService.getUrlencodedBodyParserLayer(),
       this.getValidator(),
       this.getRestLayer()
     ], apiFullPath));
