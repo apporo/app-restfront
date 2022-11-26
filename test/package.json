@@ -1,0 +1,12 @@
+{
+  "name": "private-test",
+  "version": "0.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "liberica": "^0.3.1"
+  },
+  "author": "devebot",
+  "license": "MIT"
+}
