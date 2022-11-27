@@ -22,7 +22,7 @@ describe('handler', function() {
     var Handler, sanitizeMappings;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       sanitizeMappings = mockit.get(Handler, 'sanitizeMappings');
     });
 
@@ -177,7 +177,7 @@ describe('handler', function() {
     var Handler, mutateRenameFields;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       mutateRenameFields = mockit.get(Handler, 'mutateRenameFields');
     });
 
@@ -217,7 +217,7 @@ describe('handler', function() {
     });
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       extractRequestOptions = mockit.get(Handler, 'extractRequestOptions');
     });
 
@@ -281,13 +281,7 @@ describe('handler', function() {
         }
       });
       var output = extractRequestOptions(req, sandboxConfig.requestOptions, config);
-      assert.deepInclude(output.userAgent, {
-        "os": {
-          "name": undefined,
-          "version": undefined
-        },
-        "ua": ""
-      });
+      assert.deepEqual(output.userAgent, {});
     });
 
     it('uaParser is safety: should not crack the requests with wrong user-agent format', function() {
@@ -338,7 +332,7 @@ describe('handler', function() {
     var Handler, addDefaultHeaders;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       addDefaultHeaders = mockit.get(Handler, 'addDefaultHeaders');
     });
 
@@ -384,7 +378,7 @@ describe('handler', function() {
     var Handler, renderPacketToResponse;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       renderPacketToResponse = mockit.get(Handler, 'renderPacketToResponse');
     });
 
@@ -440,7 +434,7 @@ describe('handler', function() {
     var Handler, buildMiddlewareFromMapping;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       buildMiddlewareFromMapping = mockit.get(Handler, 'buildMiddlewareFromMapping');
     });
 
@@ -468,7 +462,7 @@ describe('handler', function() {
     var Handler, transformScalarError;
 
     beforeEach(function() {
-      Handler = mockit.acquire('handler');
+      Handler = mockit.acquire('handler', { libraryDir: '../lib' });
       transformScalarError = mockit.get(Handler, 'transformScalarError');
     });
 
