@@ -1,7 +1,7 @@
 /.idea
-/node_modules
 /lib
 /log
+node_modules
 .npmrc
 *.log
 package-lock.json

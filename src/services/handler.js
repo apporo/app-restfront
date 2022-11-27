@@ -5,8 +5,9 @@ const Promise = Devebot.require('bluebird');
 const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
-const uaParser = require('ua-parser-js');
 const path = require('path');
+
+const { parseUserAgent } = require('../utils');
 
 function Handler(params = {}) {
   const { loggingFactory, packageName, sandboxConfig } = params;
@@ -549,7 +550,7 @@ function extractRequestOptions (req, requestOptions, opts = {}, errors) {
   }
 
   if (opts.userAgentEnabled) {
-    result.userAgent = uaParser(req.get('User-Agent'));
+    result.userAgent = parseUserAgent(req.get('User-Agent'));
   }
 
   for (const key in opts.extensions) {

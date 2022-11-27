@@ -1,6 +1,6 @@
 {
   "name": "app-restfront",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Devebot application restfront layerware",
   "homepage": "https://github.com/apporo/app-restfront.git",
   "author": {
@@ -40,7 +40,7 @@
     "devebot": "^0.4.0",
     "path-to-regexp": "2.4.0",
     "schema-validator": "3.3.1",
-    "ua-parser-js": "^0.7.20"
+    "ua-parser-js": "1.0.32"
   },
   "devDependencies": {
     "@babel/cli": "^7.19.3",
