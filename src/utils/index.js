@@ -2,11 +2,11 @@
 
 const uaParser = require('ua-parser-js');
 
-function parseUserAgent(userAgentString) {
+function parseUserAgent (userAgentString) {
   if (!userAgentString) {
     return {};
   }
   return uaParser(userAgentString);
 }
 
-module.exports = { parseUserAgent }
+module.exports = { parseUserAgent };

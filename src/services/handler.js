@@ -9,7 +9,7 @@ const path = require('path');
 
 const { parseUserAgent } = require('../utils');
 
-function Handler(params = {}) {
+function Handler (params = {}) {
   const { loggingFactory, packageName, sandboxConfig } = params;
   const { sandboxRegistry, errorManager, tracelogService, mappingLoader, schemaValidator } = params;
   const L = loggingFactory.getLogger();
@@ -71,7 +71,7 @@ function Handler(params = {}) {
       }
     });
     return router;
-  }
+  };
 
   this.buildRestRouter = function (express) {
     const router = express.Router();
@@ -134,7 +134,7 @@ function sanitizeMappings (mappingHash, newMappings = {}) {
       if (lodash.isString(apiPath) && !lodash.isEmpty(apiPath)) {
         swagger.paths = lodash.mapKeys(swagger.paths, function(obj, key) {
           return path.join(apiPath, key);
-        })
+        });
       }
     }
     newMappings[name].apiDocs = swagger;
@@ -142,11 +142,11 @@ function sanitizeMappings (mappingHash, newMappings = {}) {
   return newMappings;
 }
 
-function upgradeMappings(mappings = []) {
+function upgradeMappings (mappings = []) {
   return lodash.map(mappings, upgradeMapping);
 }
 
-function upgradeMapping(mapping = {}) {
+function upgradeMapping (mapping = {}) {
   // input ~ transformRequest
   mapping.input = mapping.input || {};
   if (!lodash.isFunction(mapping.input.preValidator)) {
@@ -192,7 +192,7 @@ function upgradeMapping(mapping = {}) {
   return mapping;
 }
 
-function isMethodIncluded(methods, reqMethod) {
+function isMethodIncluded (methods, reqMethod) {
   if (reqMethod && lodash.isString(reqMethod)) {
     reqMethod = reqMethod.toUpperCase();
     if (methods) {
@@ -209,7 +209,7 @@ function isMethodIncluded(methods, reqMethod) {
   return false;
 }
 
-function buildMiddlewareFromMapping(context, mapping) {
+function buildMiddlewareFromMapping (context, mapping) {
   const { L, T, errorManager, errorBuilder, serviceSelector, tracelogService, sandboxConfig, schemaValidator } = context;
 
   const timeout = mapping.timeout || sandboxConfig.defaultTimeout;
@@ -283,7 +283,7 @@ function buildMiddlewareFromMapping(context, mapping) {
     if (mapping.input.enabled !== false && mapping.input.mutate.rename) {
       promize = promize.then(function (reqData) {
         return mutateRenameFields(reqData, mapping.input.mutate.rename);
-      })
+      });
     }
 
     if (mapping.input.enabled !== false && mapping.input.postValidator) {
@@ -350,7 +350,7 @@ function buildMiddlewareFromMapping(context, mapping) {
           packet = packet || {};
           packet.body = packet.body || {
             message: "mapping.error.transform() output don't have body field"
-          }
+          };
         } else {
           if (failed instanceof Error) {
             packet = transformErrorObject(failed, responseOptions);
@@ -412,7 +412,7 @@ function buildMiddlewareFromMapping(context, mapping) {
         text: 'Req[${requestId}] end'
       }));
     });
-  }
+  };
 }
 
 function mutateRenameFields (obj, nameMappings) {
@@ -433,7 +433,7 @@ function applyValidator (validator, defaultRef, reqData, reqOpts, services) {
   return Promise.resolve(validator(reqData, reqOpts, services))
   .then(function (result) {
     if (!isPureObject(result)) {
-      result = { valid: result }
+      result = { valid: result };
     }
     if (result.valid === false) {
       if (result.errorName && services.errorBuilder) {
@@ -498,17 +498,17 @@ function transformScalarError (error, responseOptions = {}, packet = {}) {
     packet.body = {
       type: 'null',
       message: 'Error is null'
-    }
+    };
   } else if (lodash.isString(error)) {
     packet.body = {
       type: 'string',
       message: error
-    }
+    };
   } else if (lodash.isArray(error)) {
     packet.body = {
       type: 'array',
       payload: error
-    }
+    };
   } else if (lodash.isObject(error)) {
     lodash.assign(packet, lodash.pick(error, ERROR_FIELDS));
     if (lodash.isNil(packet.body)) {
@@ -520,7 +520,7 @@ function transformScalarError (error, responseOptions = {}, packet = {}) {
       type: (typeof error),
       message: 'Error: ' + error,
       payload: error
-    }
+    };
   }
   packet.statusCode = packet.statusCode || 500;
   packet.headers = packet.headers || {};

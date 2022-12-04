@@ -5,7 +5,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "liberica": "^0.4.0"
+    "liberica": "^0.4.0",
+    "mocha": "^10.1.0"
   },
   "author": "devebot",
   "license": "MIT"

@@ -4,7 +4,7 @@ const Devebot = require('devebot');
 const lodash = Devebot.require('lodash');
 const path = require('path');
 
-function Service(params = {}) {
+function Service (params = {}) {
   const { restfrontHandler, webweaverService } = params;
   const pluginCfg = lodash.get(params, ['sandboxConfig'], {});
   const contextPath = pluginCfg.contextPath || '/restfront';
@@ -18,24 +18,24 @@ function Service(params = {}) {
       name: 'app-restfront-service-assets~' + index,
       path: path.join(contextPath, webpath),
       middleware: express.static(filepath)
-    }
-  }
+    };
+  };
 
   this.getValidator = function() {
     return {
       name: 'app-restfront-handler-validator',
       path: apiFullPath,
       middleware: restfrontHandler.validator(express)
-    }
-  }
+    };
+  };
 
   this.getRestLayer = function() {
     return {
       name: 'app-restfront-handler-restapi',
       path: apiFullPath,
       middleware: restfrontHandler.buildRestRouter(express)
-    }
-  }
+    };
+  };
 
   if (pluginCfg.autowired !== false) {
     const self = this;
@@ -47,7 +47,7 @@ function Service(params = {}) {
           layerware.push(self.getAssetsLayer(webpath, filepath, index));
         }
       }
-    })
+    });
     layerware.push(webweaverService.getSessionLayer([
       webweaverService.getJsonBodyParserLayer(),
       webweaverService.getUrlencodedBodyParserLayer(),
