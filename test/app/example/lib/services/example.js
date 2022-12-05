@@ -1,16 +1,16 @@
 'use strict';
 
-var Devebot = require('devebot');
-var Promise = Devebot.require('bluebird');
-var chores = Devebot.require('chores');
-var Fibonacci = require('../utils/fibonacci');
+const Devebot = require('devebot');
+const Promise = Devebot.require('bluebird');
+const chores = Devebot.require('chores');
+const Fibonacci = require('../utils/fibonacci');
 
-var Service = function(params) {
+const Service = function(params) {
   params = params || {};
 
-  var L = params.loggingFactory.getLogger();
-  var T = params.loggingFactory.getTracer();
-  var blockRef = chores.getBlockRef(__filename, params.packageName);
+  const L = params.loggingFactory.getLogger();
+  const T = params.loggingFactory.getTracer();
+  const blockRef = chores.getBlockRef(__filename, params.packageName);
 
   params.errorManager.register(params.packageName, {
     errorCodes: params.sandboxConfig.errorCodes
@@ -22,7 +22,7 @@ var Service = function(params) {
 
   this.fibonacci = function(data, opts) {
     opts = opts || {};
-    var reqTr = T.branch({ key: 'requestId', value: opts.requestId || T.getLogID()});
+    const reqTr = T.branch({ key: 'requestId', value: opts.requestId || T.getLogID() });
     L.has('debug') && L.log('debug', reqTr.add({ data: data }).toMessage({
       tags: [ blockRef, 'fibonacci' ],
       text: ' - fibonacci[${requestId}] is invoked with parameters: ${data}'
@@ -33,8 +33,8 @@ var Service = function(params) {
         message: 'invalid input number'
       });
     }
-    var fibonacci = new Fibonacci(data);
-    var result = fibonacci.finish();
+    const fibonacci = new Fibonacci(data);
+    const result = fibonacci.finish();
     result.actionId = data.actionId;
     L.has('debug') && L.log('debug', reqTr.add({ result: result }).toMessage({
       tags: [ blockRef, 'fibonacci' ],
@@ -44,11 +44,11 @@ var Service = function(params) {
       return Promise.resolve(result).delay(data.delay);
     }
     return result;
-  }
+  };
 };
 
 Service.referenceHash = {
   errorManager: 'app-errorlist/manager'
-}
+};
 
 module.exports = Service;

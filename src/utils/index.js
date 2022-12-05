@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
-const uaParser = require('ua-parser-js');
+const uaParser = require("ua-parser-js");
 const Devebot = require("devebot");
 const lodash = Devebot.require("lodash");
 
 function isPureObject (o) {
-  return o && (typeof o === 'object') && !Array.isArray(o);
+  return o && (typeof o === "object") && !Array.isArray(o);
 }
 
-function filterMethodResult({ clone, basepath, omit, pick } = {}, next) {
-  function callNext(next, resp, req, reqOpts) {
+function filterMethodResult ({ clone, basepath, omit, pick } = {}, next) {
+  function callNext (next, resp, req, reqOpts) {
     if (lodash.isFunction(next)) {
       return next(resp, req, reqOpts);
     }
@@ -35,7 +35,7 @@ function filterMethodResult({ clone, basepath, omit, pick } = {}, next) {
     resp = selected ? lodash.set(resp, basepath, target) : target;
     //
     return callNext(next, resp, req, reqOpts);
-  }
+  };
 }
 
 function parseUserAgent (userAgentString) {

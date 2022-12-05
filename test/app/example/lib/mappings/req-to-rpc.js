@@ -1,6 +1,6 @@
 'use strict';
 
-var mappings = {
+const mappings = {
   apiPath: '/sub',
   apimaps: [
     {
@@ -14,9 +14,9 @@ var mappings = {
       errorSource: 'otherErrorSource',
       input: {
         preValidator: function (req, reqOpts, services) {
-          var demoAction = req.get('X-Demo-Action');
-          var L = services.logger;
-          var T = services.tracer;
+          const demoAction = req.get('X-Demo-Action');
+          const L = services.logger;
+          const T = services.tracer;
           L.has('debug') && L.log('debug', T.add({
             demoAction, requestId: reqOpts.requestId
           }).toMessage({
@@ -31,8 +31,8 @@ var mappings = {
           return true;
         },
         transform: function (req, reqOpts, services) {
-          var L = services.logger;
-          var T = services.tracer;
+          const L = services.logger;
+          const T = services.tracer;
           L.has('debug') && L.log('debug', T.add({
             requestId: reqOpts.requestId
           }).toMessage({
@@ -41,8 +41,8 @@ var mappings = {
           return { number: req.params.number }
         },
         postValidator: function (data, reqOpts, services) {
-          var L = services.logger;
-          var T = services.tracer;
+          const L = services.logger;
+          const T = services.tracer;
           L.has('debug') && L.log('debug', T.add(reqOpts).toMessage({
             tmpl: 'postValidator[${requestId}] is invoked'
           }));

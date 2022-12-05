@@ -1,8 +1,8 @@
 'use strict';
 
-var path = require('path');
-var contextPath = '/restfront';
-var apiPath = 'rest';
+const path = require('path');
+const contextPath = '/restfront';
+const apiPath = 'rest';
 
 module.exports = {
   application: {

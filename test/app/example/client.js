@@ -1,6 +1,6 @@
 'use strict';
 
-var main = require('./index.js');
-var exampleService = main.runner.getSandboxService('example');
+const main = require('./index.js');
+const exampleService = main.runner.getSandboxService('example');
 
 console.log(exampleService.fibonacci({ number: 10 }, {}));

@@ -1,8 +1,8 @@
 'use strict';
 
-var path = require('path');
+const path = require('path');
 
-var app = require('devebot').launchApplication({
+const app = require('devebot').launchApplication({
   appRootPath: __dirname
 }, [
   {

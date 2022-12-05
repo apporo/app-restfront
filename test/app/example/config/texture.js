@@ -1,4 +1,4 @@
-var lodash = require('lodash');
+"use strict";
 
 module.exports = {
   application: {
@@ -30,4 +30,4 @@ module.exports = {
       }
     }
   }
-}
+};

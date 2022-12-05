@@ -1,6 +1,6 @@
 'use strict';
 
-var mappings = [
+const mappings = [
   {
     path: '/:apiVersion/fibonacci/calc/:number',
     method: 'GET',
