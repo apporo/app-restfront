@@ -7,7 +7,7 @@ const lodash = Devebot.require('lodash');
 const Validator = require('schema-validator');
 const path = require('path');
 
-const { parseUserAgent } = require('../utils');
+const { isPureObject, parseUserAgent } = require('../utils');
 
 function Handler (params = {}) {
   const { loggingFactory, packageName, sandboxConfig } = params;
@@ -560,10 +560,6 @@ function extractRequestOptions (req, requestOptions, opts = {}, errors) {
   }
 
   return result;
-}
-
-function isPureObject (o) {
-  return o && (typeof o === 'object') && !Array.isArray(o);
 }
 
 function renderPacketToResponse_Standard (packet = {}, res) {
